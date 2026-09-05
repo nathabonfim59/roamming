@@ -10,6 +10,7 @@ import (
 	"errors"
 	"fmt"
 	"html"
+	"io"
 	"net"
 	"net/http"
 	"net/url"
@@ -256,6 +257,13 @@ func (a *Auth) postForm(ctx context.Context, endpoint string, form url.Values, o
 	}
 	defer resp.Body.Close()
 	if resp.StatusCode != http.StatusOK {
+		// OAuth endpoints report the reason in a JSON body even on
+		// failure (e.g. 401 invalid_client); a bare status hides it.
+		body, _ := io.ReadAll(io.LimitReader(resp.Body, 4<<10))
+		var rejected tokenResponse
+		if json.Unmarshal(body, &rejected) == nil && rejected.Error != "" {
+			return fmt.Errorf("%s: %s (%s)", endpoint, rejected.Error, rejected.ErrorDescription)
+		}
 		return fmt.Errorf("%s: unexpected status %s", endpoint, resp.Status)
 	}
 	return json.NewDecoder(resp.Body).Decode(out)
@@ -368,7 +376,13 @@ func (a *Auth) exchangeCode(ctx context.Context, cfg OAuthConfig, code, verifier
 		return nil, err
 	}
 	if resp.Error != "" {
-		return nil, fmt.Errorf("token exchange failed: %s (%s)", resp.Error, resp.ErrorDescription)
+		err := fmt.Errorf("token exchange failed: %s (%s)", resp.Error, resp.ErrorDescription)
+		// A confidential client registered without sending its secret
+		// fails exactly here; point at the fix instead of the protocol.
+		if resp.Error == "invalid_client" && cfg.ClientSecret == "" {
+			err = fmt.Errorf("%w; this OAuth app was created with a client secret — paste it into the app's Client Secret field and connect again", err)
+		}
+		return nil, err
 	}
 	if resp.AccessToken == "" {
 		return nil, errors.New("token endpoint returned no access token")

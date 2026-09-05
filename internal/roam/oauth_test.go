@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"net/http/httptest"
+	"net/url"
 	"strings"
 	"testing"
 	"time"
@@ -138,5 +140,26 @@ func TestNewCodeVerifier(t *testing.T) {
 	// base64url of 32 bytes is always 43 chars of unreserved characters.
 	if len(v) != 43 || strings.ContainsAny(v, "+/= ") {
 		t.Fatalf("verifier %q is not a valid PKCE code verifier", v)
+	}
+}
+
+// TestPostFormSurfacesOAuthError pins the contract that a failing token
+// endpoint response is reported with its OAuth error, not just the HTTP
+// status: the status alone hides the actual reason (e.g. invalid_client
+// on a confidential client exchanged without its secret).
+func TestPostFormSurfacesOAuthError(t *testing.T) {
+	t.Parallel()
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusUnauthorized)
+		fmt.Fprint(w, `{"error":"invalid_client","error_description":"Client authentication failed"}`)
+	}))
+	defer srv.Close()
+
+	a := NewAuth()
+	err := a.postForm(t.Context(), srv.URL, url.Values{"grant_type": {"authorization_code"}}, &tokenResponse{})
+	if err == nil || !strings.Contains(err.Error(), "invalid_client") ||
+		!strings.Contains(err.Error(), "Client authentication failed") {
+		t.Fatalf("err = %v, want the OAuth error body surfaced", err)
 	}
 }
