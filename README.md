@@ -51,7 +51,7 @@ go build -o roamming .
 ### Release
 
 Pushing a `v*` tag runs GoReleaser on GitHub Actions: each OS builds
-natively in a matrix (linux/amd64+arm64, darwin/amd64+arm64,
+natively in a matrix (linux/amd64, darwin/amd64+arm64,
 windows/amd64), and the archives are merged into a single GitHub
 release with checksums:
 

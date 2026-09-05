@@ -8,20 +8,14 @@ project_name: roamming
 # .goreleaser.yaml for the master view).
 
 builds:
-  # Native.
+  # Native on the ubuntu runner.
+  # No linux/arm64 target: cross-compiling CGO to arm64 requires a full
+  # multiarch sysroot that is fragile to maintain on CI runners.
   - id: linux-amd64
     goos: [linux]
     goarch: [amd64]
     env:
       - CGO_ENABLED=1
-
-  # Cross-compiled (gcc-aarch64-linux-gnu, installed by the workflow).
-  - id: linux-arm64
-    goos: [linux]
-    goarch: [arm64]
-    env:
-      - CGO_ENABLED=1
-      - CC=aarch64-linux-gnu-gcc
 
 archives:
   - formats: [tar.gz]

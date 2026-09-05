@@ -14,19 +14,16 @@ project_name: roamming
 
 builds:
   # Native on the ubuntu runner.
+  #
+  # No linux/arm64 target: cross-compiling CGO to arm64 needs a full
+  # multiarch sysroot (arm64 GL/X11/Wayland dev packages from the Ubuntu
+  # ports repo), which is fragile on CI runners. Revisit with a
+  # dedicated multiarch setup if arm64 Linux binaries are needed.
   - id: linux-amd64
     goos: [linux]
     goarch: [amd64]
     env:
       - CGO_ENABLED=1
-
-  # Cross-compiled on the ubuntu runner (gcc-aarch64-linux-gnu).
-  - id: linux-arm64
-    goos: [linux]
-    goarch: [arm64]
-    env:
-      - CGO_ENABLED=1
-      - CC=aarch64-linux-gnu-gcc
 
   # Native toolchain on the macos runner; clang builds both arches via
   # -arch, so one build id covers Apple Silicon and Intel.
