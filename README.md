@@ -1,3 +1,7 @@
+<p align="center">
+  <img src="docs/design/logo.png" alt="roamming logo" width="400">
+</p>
+
 # roamming
 
 A system-tray desktop app (Go + [Fyne](https://fyne.io)) that sets **your own**
