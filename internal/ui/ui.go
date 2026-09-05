@@ -184,6 +184,13 @@ func New(fa fyne.App) *App {
 	return a
 }
 
+// Activate shows and focuses the main window. It is the action behind
+// the tray menu and the response to a second launch of the app.
+func (a *App) Activate() {
+	a.win.Show()
+	a.win.RequestFocus()
+}
+
 // Show displays the main window.
 func (a *App) Show() { a.win.Show() }
 
@@ -914,10 +921,7 @@ func (a *App) setupTray() {
 	a.trayToggle.Disabled = true
 
 	a.tray = fyne.NewMenu("Roam Activity",
-		fyne.NewMenuItem("Show window", func() {
-			a.win.Show()
-			a.win.RequestFocus()
-		}),
+		fyne.NewMenuItem("Show window", a.Activate),
 		fyne.NewMenuItemSeparator(),
 		a.trayStatus,
 		a.trayToggle,
