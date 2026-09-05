@@ -44,14 +44,20 @@ sips -z 512 512   "$ICON_SRC" --out "$ICONSET/icon_512x512.png"    >/dev/null
 iconutil -c icns "$ICONSET" -o "$WORK/roamming.icns"
 
 # --- collect the goreleaser-built binaries ----------------------------
-declare -A BINS
+# (plain vars, not associative arrays: the macOS runner's /bin/bash is
+# the GPLv2 bash 3.2, which has no `declare -A`)
+BIN_AMD64=""
+BIN_ARM64=""
 while IFS= read -r bin; do
   case "$bin" in
-    *darwin_arm64*) BINS[arm64]="$bin" ;;
-    *darwin_amd64*) BINS[amd64]="$bin" ;;
+    *darwin_arm64*) BIN_ARM64="$bin" ;;
+    *darwin_amd64*) BIN_AMD64="$bin" ;;
   esac
 done < <(find dist -type f -name roamming)
-[ "${#BINS[@]}" -gt 0 ] || { echo "no darwin binaries found in dist/" >&2; exit 1; }
+[ -n "$BIN_AMD64" ] || [ -n "$BIN_ARM64" ] || {
+  echo "no darwin binaries found in dist/" >&2
+  exit 1
+}
 
 # --- bundle + package --------------------------------------------------
 build_pkg() { # <suffix> <binary>
@@ -106,13 +112,16 @@ PLIST
     "dist/roamming_${VERSION}_darwin_${suffix}.pkg"
 }
 
-for arch in amd64 arm64; do
-  [ -n "${BINS[$arch]:-}" ] && build_pkg "$arch" "${BINS[$arch]}"
-done
+if [ -n "$BIN_AMD64" ]; then
+  build_pkg amd64 "$BIN_AMD64"
+fi
+if [ -n "$BIN_ARM64" ]; then
+  build_pkg arm64 "$BIN_ARM64"
+fi
 
 # universal: both slices lipo'd into one download for any Mac
-if [ -n "${BINS[amd64]:-}" ] && [ -n "${BINS[arm64]:-}" ]; then
-  lipo -create -output "$WORK/roamming" "${BINS[amd64]}" "${BINS[arm64]}"
+if [ -n "$BIN_AMD64" ] && [ -n "$BIN_ARM64" ]; then
+  lipo -create -output "$WORK/roamming" "$BIN_AMD64" "$BIN_ARM64"
   build_pkg universal "$WORK/roamming"
 fi
 
