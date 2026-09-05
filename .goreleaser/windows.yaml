@@ -1,0 +1,18 @@
+version: 2
+
+project_name: roamming
+
+# Windows release config, run on the windows runner by
+# .github/workflows/release.yml (MinGW-w64 is preinstalled there; see
+# .goreleaser.yaml for the master view).
+
+builds:
+  - id: windows
+    goos: [windows]
+    goarch: [amd64]
+    env:
+      - CGO_ENABLED=1
+
+archives:
+  - formats: [zip]
+    name_template: "{{ .ProjectName }}_{{ .Version }}_{{ .Os }}_{{ .Arch }}"

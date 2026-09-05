@@ -43,6 +43,20 @@ sudo apt install build-essential pkg-config libgl1-mesa-dev xorg-dev
 go build -o roamming .
 ```
 
+### Release
+
+Pushing a `v*` tag runs GoReleaser on GitHub Actions: each OS builds
+natively in a matrix (linux/amd64+arm64, darwin/amd64+arm64,
+windows/amd64), and the archives are merged into a single GitHub
+release with checksums:
+
+```sh
+git tag v0.1.0 && git push origin v0.1.0
+```
+
+The goreleaser configs live in `.goreleaser.yaml` (master view) and
+`.goreleaser/<os>.yaml` (what CI actually runs per OS).
+
 ## Usage
 
 - **Tray icon** — left-click opens the window, right-click opens the menu

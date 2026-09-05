@@ -1,0 +1,55 @@
+version: 2
+
+project_name: roamming
+
+# Master view of the release setup — used by `goreleaser check` and for
+# human reference. Fyne is a CGO app, so it cannot be cross-compiled to
+# every OS from one machine: the release workflow (.github/workflows/
+# release.yml) runs goreleaser with the matching per-OS config from
+# .goreleaser/ on each runner, uploads the archives, and a final job
+# merges everything into a single GitHub release.
+# (GoReleaser's split/merge and prebuilt builders are Pro-only.)
+# To release locally, use a per-OS config, e.g.:
+#   goreleaser release --snapshot --clean -f .goreleaser/linux.yaml
+
+builds:
+  # Native on the ubuntu runner.
+  - id: linux-amd64
+    goos: [linux]
+    goarch: [amd64]
+    env:
+      - CGO_ENABLED=1
+
+  # Cross-compiled on the ubuntu runner (gcc-aarch64-linux-gnu).
+  - id: linux-arm64
+    goos: [linux]
+    goarch: [arm64]
+    env:
+      - CGO_ENABLED=1
+      - CC=aarch64-linux-gnu-gcc
+
+  # Native toolchain on the macos runner; clang builds both arches via
+  # -arch, so one build id covers Apple Silicon and Intel.
+  - id: darwin
+    goos: [darwin]
+    goarch: [amd64, arm64]
+    env:
+      - CGO_ENABLED=1
+
+  # Native on the windows runner (MinGW-w64 is preinstalled there).
+  - id: windows
+    goos: [windows]
+    goarch: [amd64]
+    env:
+      - CGO_ENABLED=1
+
+archives:
+  - formats: [tar.gz]
+    name_template: "{{ .ProjectName }}_{{ .Version }}_{{ .Os }}_{{ .Arch }}"
+    format_overrides:
+      - goos: windows
+        formats: [zip]
+
+# Checksums for the final release are regenerated from all archives in
+# the release workflow's merge job, so the checksums.txt of each
+# partial run is intentionally not uploaded.

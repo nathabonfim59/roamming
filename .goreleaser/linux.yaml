@@ -1,0 +1,28 @@
+version: 2
+
+project_name: roamming
+
+# Linux release config, run on the ubuntu runner by
+# .github/workflows/release.yml (with .goreleaser/darwin.yaml and
+# .goreleaser/windows.yaml running on the other runners; see
+# .goreleaser.yaml for the master view).
+
+builds:
+  # Native.
+  - id: linux-amd64
+    goos: [linux]
+    goarch: [amd64]
+    env:
+      - CGO_ENABLED=1
+
+  # Cross-compiled (gcc-aarch64-linux-gnu, installed by the workflow).
+  - id: linux-arm64
+    goos: [linux]
+    goarch: [arm64]
+    env:
+      - CGO_ENABLED=1
+      - CC=aarch64-linux-gnu-gcc
+
+archives:
+  - formats: [tar.gz]
+    name_template: "{{ .ProjectName }}_{{ .Version }}_{{ .Os }}_{{ .Arch }}"

@@ -1,0 +1,20 @@
+version: 2
+
+project_name: roamming
+
+# macOS release config, run on the macos runner by
+# .github/workflows/release.yml (see .goreleaser.yaml for the master
+# view).
+
+builds:
+  # Native toolchain; clang builds both arches via -arch, so one build
+  # id covers Apple Silicon and Intel.
+  - id: darwin
+    goos: [darwin]
+    goarch: [amd64, arm64]
+    env:
+      - CGO_ENABLED=1
+
+archives:
+  - formats: [tar.gz]
+    name_template: "{{ .ProjectName }}_{{ .Version }}_{{ .Os }}_{{ .Arch }}"
