@@ -41,9 +41,29 @@ nfpms:
         dst: /usr/lib/systemd/user/roamming.service
       - src: packaging/linux/roamming.desktop
         dst: /usr/share/applications/roamming.desktop
-      - src: packaging/linux/icons/hicolor
-        dst: /usr/share/icons/hicolor
-        type: tree
+      # The icons are enumerated explicitly on purpose: nfpm's
+      # `type: tree` copies the Go FileInfo of the source directories
+      # into the tar headers, encoding the os.ModeDir flag as a
+      # base-256 mode. Pacman compares raw st_mode and then warns
+      # "directory permissions differ ... 755 package: 755" for every
+      # directory in the tree. Plain file entries get clean octal
+      # parent dirs (0000755) and install without warnings.
+      - src: packaging/linux/icons/hicolor/16x16/apps/roamming.png
+        dst: /usr/share/icons/hicolor/16x16/apps/roamming.png
+      - src: packaging/linux/icons/hicolor/24x24/apps/roamming.png
+        dst: /usr/share/icons/hicolor/24x24/apps/roamming.png
+      - src: packaging/linux/icons/hicolor/32x32/apps/roamming.png
+        dst: /usr/share/icons/hicolor/32x32/apps/roamming.png
+      - src: packaging/linux/icons/hicolor/48x48/apps/roamming.png
+        dst: /usr/share/icons/hicolor/48x48/apps/roamming.png
+      - src: packaging/linux/icons/hicolor/64x64/apps/roamming.png
+        dst: /usr/share/icons/hicolor/64x64/apps/roamming.png
+      - src: packaging/linux/icons/hicolor/128x128/apps/roamming.png
+        dst: /usr/share/icons/hicolor/128x128/apps/roamming.png
+      - src: packaging/linux/icons/hicolor/256x256/apps/roamming.png
+        dst: /usr/share/icons/hicolor/256x256/apps/roamming.png
+      - src: packaging/linux/icons/hicolor/512x512/apps/roamming.png
+        dst: /usr/share/icons/hicolor/512x512/apps/roamming.png
       - src: packaging/linux/icons/pixmaps/roamming.png
         dst: /usr/share/pixmaps/roamming.png
     scripts:
