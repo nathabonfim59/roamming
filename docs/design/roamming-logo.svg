@@ -24,14 +24,14 @@
      inkscape:deskcolor="#d1d1d1"
      inkscape:document-units="px"
      inkscape:zoom="1.0172527"
-     inkscape:cx="288.03071"
-     inkscape:cy="537.23133"
+     inkscape:cx="308.67453"
+     inkscape:cy="285.57309"
      inkscape:window-width="1528"
      inkscape:window-height="920"
      inkscape:window-x="0"
      inkscape:window-y="0"
      inkscape:window-maximized="0"
-     inkscape:current-layer="g27"
+     inkscape:current-layer="g10"
      showguides="true">
     <sodipodi:guide
        position="86.64193,62.275539"
@@ -56,7 +56,10 @@
        id="page27"
        margin="0"
        bleed="0"
-       inkscape:label="logo" />
+       inkscape:label="logo"
+       inkscape:export-filename="logo.png"
+       inkscape:export-xdpi="127.00001"
+       inkscape:export-ydpi="127.00001" />
     <inkscape:page
        x="5.600286"
        y="144.36293"
@@ -135,7 +138,7 @@
              id="path6" />
           <path
              d="m 71.881606,78.811671 a 4.8687146,4.8687146 0 0 0 4.868513,-4.868512 4.8687146,4.8687146 0 0 0 -4.868513,-4.868933 4.8687146,4.8687146 0 0 0 -4.868932,4.868933 4.8687146,4.8687146 0 0 0 4.868932,4.868512 z"
-             style="opacity:1;fill:#ffffff;stroke:#000000;stroke-width:1.93201"
+             style="opacity:1;fill:none;stroke:#000000;stroke-width:1.93201"
              id="path9" />
         </g>
       </g>
