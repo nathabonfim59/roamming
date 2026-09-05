@@ -4,8 +4,15 @@ on:
   push:
     tags: ["v*"]
   # Manual runs build everything but skip publishing: a dry run to
-  # exercise the installers without cutting a release.
-  workflow_dispatch: {}
+  # exercise the installers without cutting a release. Set "upload to"
+  # to an existing release tag to refresh its stable-name download
+  # assets (see the publish job).
+  workflow_dispatch:
+    inputs:
+      upload_to:
+        description: "Upload the stable-name download assets to this existing release (e.g. v1.1.1). Empty = dry run."
+        required: false
+        type: string
 
 permissions:
   contents: read
@@ -70,7 +77,7 @@ jobs:
           $exe = (Get-ChildItem dist -Recurse -Filter roamming.exe |
             Select-Object -First 1).FullName
           if (-not $exe) { throw "roamming.exe not found under dist/" }
-          $ver = "${{ github.ref_name }}".TrimStart("v")
+          $ver = "${{ github.event.inputs.upload_to || github.ref_name }}".TrimStart("v")
           if ($ver -notmatch '^\d+\.\d+\.\d+$') { $ver = "0.0.0" }
           $outfile = Join-Path (Resolve-Path dist) `
             "roamming_${ver}_windows_amd64_setup.exe"
@@ -83,7 +90,7 @@ jobs:
         if: runner.os == 'macOS'
         run: packaging/macos/package.sh
         env:
-          VERSION: ${{ github.ref_name }}
+          VERSION: ${{ github.event.inputs.upload_to || github.ref_name }}
 
       - name: Upload artifacts
         uses: actions/upload-artifact@v7
@@ -102,7 +109,7 @@ jobs:
   release:
     name: publish release
     needs: build
-    if: startsWith(github.ref, 'refs/tags/')
+    if: startsWith(github.ref, 'refs/tags/') || github.event.inputs.upload_to != ''
     runs-on: ubuntu-latest
     permissions:
       contents: write
@@ -124,10 +131,36 @@ jobs:
             *_setup.exe > checksums.txt
           cat checksums.txt
 
+      # Version-free copies of the five download-button assets: the
+      # releases/latest/download/<name> links in the README need stable
+      # names. Byte-identical to the versioned files, so they are kept
+      # out of checksums.txt on purpose.
+      - name: Stable-name copies for direct downloads
+        run: |
+          cd dist
+          cp roamming_*_linux_amd64.deb          roamming_linux_amd64.deb
+          cp roamming_*_linux_x86_64.rpm         roamming_linux_x86_64.rpm
+          cp roamming_*_linux_x86_64.pkg.tar.zst roamming_linux_x86_64.pkg.tar.zst
+          cp roamming_*_darwin_universal.pkg     roamming_darwin_universal.pkg
+          cp roamming_*_windows_amd64_setup.exe  roamming_windows_amd64_setup.exe
+
       - name: Publish GitHub release
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          TARGET: ${{ github.event.inputs.upload_to || github.ref_name }}
+          DISPATCHED: ${{ github.event_name == 'workflow_dispatch' && '1' || '' }}
         run: |
-          gh release create "$GITHUB_REF_NAME" dist/* \
-            --title "roamming $GITHUB_REF_NAME" \
-            --generate-notes
+          if [ -n "$DISPATCHED" ]; then
+            # manual run against an existing release: refresh only the
+            # stable-name download assets
+            gh release upload "$TARGET" --clobber \
+              dist/roamming_linux_amd64.deb \
+              dist/roamming_linux_x86_64.rpm \
+              dist/roamming_linux_x86_64.pkg.tar.zst \
+              dist/roamming_darwin_universal.pkg \
+              dist/roamming_windows_amd64_setup.exe
+          else
+            gh release create "$TARGET" dist/* \
+              --title "roamming $TARGET" \
+              --generate-notes
+          fi

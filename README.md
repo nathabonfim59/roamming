@@ -44,10 +44,18 @@ ROAMMING_CAPTURE_GALLERY=1 go test ./internal/ui -run TestCaptureGallery
 
 ## Install
 
-Grab an installer from the
-[latest release](https://github.com/nathabonfim59/roamming/releases/latest) —
-every one of them registers roamming to start when you log in, so the tray
-app can keep your activity current:
+Direct downloads pull the latest release automatically:
+
+| Linux | macOS | Windows |
+| :---: | :---: | :---: |
+| [![Ubuntu](https://img.shields.io/badge/Ubuntu-E95420?style=for-the-badge&logo=ubuntu&logoColor=white)](https://github.com/nathabonfim59/roamming/releases/latest/download/roamming_linux_amd64.deb)<br>[![Red Hat](https://img.shields.io/badge/Red_Hat-EE0000?style=for-the-badge&logo=redhat&logoColor=white)](https://github.com/nathabonfim59/roamming/releases/latest/download/roamming_linux_x86_64.rpm)<br>[![Arch Linux](https://img.shields.io/badge/Arch_Linux-1793D1?style=for-the-badge&logo=archlinux&logoColor=white)](https://github.com/nathabonfim59/roamming/releases/latest/download/roamming_linux_x86_64.pkg.tar.zst) | [![macOS](https://img.shields.io/badge/macOS-000000?style=for-the-badge&logo=apple&logoColor=white)](https://github.com/nathabonfim59/roamming/releases/latest/download/roamming_darwin_universal.pkg) | [![Windows](https://img.shields.io/badge/Windows-0078D4?style=for-the-badge&logo=windows&logoColor=white)](https://github.com/nathabonfim59/roamming/releases/latest/download/roamming_windows_amd64_setup.exe) |
+
+Every installer registers roamming to start when you log in, so the tray
+app can keep your activity current. The macOS button is a **universal**
+build (Intel + Apple Silicon); arch-specific packages are on the
+[releases page](https://github.com/nathabonfim59/roamming/releases/latest).
+
+Details:
 
 | Platform | File | Installs to | Autostart |
 | --- | --- | --- | --- |

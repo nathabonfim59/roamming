@@ -1,14 +1,15 @@
 #!/usr/bin/env bash
 # Builds the macOS .pkg installers from the darwin binaries goreleaser
 # produced in dist/ (run on a macOS runner; sips/iconutil/pkgbuild/
-# codesign are native tools).
+# codesign/lipo are native tools).
 #
 # Usage: VERSION=v1.2.3 packaging/macos/package.sh   (v prefix optional)
 #
-# Each package installs /Applications/roamming.app (agent app: no Dock
-# icon, tray-first) and registers a LaunchAgent so it starts at login —
-# the macOS equivalent of the Linux systemd user unit and the Windows
-# HKCU Run autostart entry.
+# Produces one .pkg per arch plus a universal (Intel + Apple Silicon)
+# build. Every package installs /Applications/roamming.app (agent app:
+# no Dock icon, tray-first) and registers a LaunchAgent so it starts at
+# login - the macOS equivalent of the Linux systemd user unit and the
+# Windows HKCU Run autostart entry.
 set -euo pipefail
 
 VERSION="${VERSION:?VERSION must be set (e.g. v1.2.3 or 1.2.3)}"
@@ -42,17 +43,20 @@ sips -z 512 512   "$ICON_SRC" --out "$ICONSET/icon_256x256@2x.png" >/dev/null
 sips -z 512 512   "$ICON_SRC" --out "$ICONSET/icon_512x512.png"    >/dev/null
 iconutil -c icns "$ICONSET" -o "$WORK/roamming.icns"
 
-# --- one .pkg per darwin arch -----------------------------------------
-found=0
+# --- collect the goreleaser-built binaries ----------------------------
+declare -A BINS
 while IFS= read -r bin; do
   case "$bin" in
-    *darwin_arm64*) arch=arm64 ;;
-    *darwin_amd64*) arch=amd64 ;;
-    *) continue ;;
+    *darwin_arm64*) BINS[arm64]="$bin" ;;
+    *darwin_amd64*) BINS[amd64]="$bin" ;;
   esac
-  found=1
+done < <(find dist -type f -name roamming)
+[ "${#BINS[@]}" -gt 0 ] || { echo "no darwin binaries found in dist/" >&2; exit 1; }
 
-  approot="$WORK/pkg-$arch/roamming.app"
+# --- bundle + package --------------------------------------------------
+build_pkg() { # <suffix> <binary>
+  local suffix="$1" bin="$2"
+  local approot="$WORK/pkg-$suffix/roamming.app"
   mkdir -p "$approot/Contents/MacOS" "$approot/Contents/Resources"
   cp "$bin" "$approot/Contents/MacOS/roamming"
   cp "$WORK/roamming.icns" "$approot/Contents/Resources/roamming.icns"
@@ -94,14 +98,23 @@ PLIST
   codesign --force --sign - "$approot"
 
   pkgbuild \
-    --root "$WORK/pkg-$arch" \
+    --root "$WORK/pkg-$suffix" \
     --scripts "$(dirname "$0")/scripts" \
     --identifier "$IDENT" \
     --version "$VERSION" \
     --install-location /Applications \
-    "dist/roamming_${VERSION}_darwin_${arch}.pkg"
-done < <(find dist -type f -name roamming)
+    "dist/roamming_${VERSION}_darwin_${suffix}.pkg"
+}
 
-[ "$found" -eq 1 ] || { echo "no darwin binaries found in dist/" >&2; exit 1; }
+for arch in amd64 arm64; do
+  [ -n "${BINS[$arch]:-}" ] && build_pkg "$arch" "${BINS[$arch]}"
+done
+
+# universal: both slices lipo'd into one download for any Mac
+if [ -n "${BINS[amd64]:-}" ] && [ -n "${BINS[arm64]:-}" ]; then
+  lipo -create -output "$WORK/roamming" "${BINS[amd64]}" "${BINS[arm64]}"
+  build_pkg universal "$WORK/roamming"
+fi
+
 echo "macOS packages built:"
 ls -la dist/*.pkg
