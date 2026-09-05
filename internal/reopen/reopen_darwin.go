@@ -11,19 +11,21 @@
 // forwards the event to the Go callback registered with Listen.
 package reopen
 
+// The Objective-C half of this bridge lives in reopen_darwin.m; the
+// Go toolchain compiles that file and links it against AppKit.
+//
+// The preamble below holds directives only — with //export, cgo pastes
+// everything else in it into generated C verbatim, so prose lives here
+// in Go comments, separated by a blank line from the block.
+//
+// -undefined dynamic_lookup lets the package's standalone test binary
+// link without glfw: the category's class reference then resolves via
+// dynamic lookup. The real app always links glfw, so there the class
+// resolves normally; and if it were ever renamed upstream, the runtime
+// would simply drop the category — the app keeps working, just without
+// the reopen restore.
+
 /*
-The Objective-C half of this bridge lives in reopen_darwin.m; the Go
-toolchain compiles that file and links it against AppKit. This
-preamble stays free of definitions because the file uses //export.
-
-The -undefined dynamic_lookup below lets the category reference
-GLFW's delegate class even when glfw is not part of the link
-(standalone `go test ./internal/reopen`): the reference resolves via
-dynamic lookup instead of failing the link. The real app always links
-glfw, so there the class resolves normally; and if it were ever
-renamed upstream, the runtime would simply drop the category — the
-app keeps working, just without the reopen restore.
-
 #cgo LDFLAGS: -Wl,-undefined,dynamic_lookup
 */
 import "C"
