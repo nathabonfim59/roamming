@@ -138,9 +138,9 @@ jobs:
       - name: Stable-name copies for direct downloads
         run: |
           cd dist
-          cp roamming_*_linux_amd64.deb          roamming_linux_amd64.deb
-          cp roamming_*_linux_x86_64.rpm         roamming_linux_x86_64.rpm
-          cp roamming_*_linux_x86_64.pkg.tar.zst roamming_linux_x86_64.pkg.tar.zst
+          cp roamming_*_amd64.deb          roamming_linux_amd64.deb
+          cp roamming-*.x86_64.rpm         roamming_linux_x86_64.rpm
+          cp roamming-*-x86_64.pkg.tar.zst roamming_linux_x86_64.pkg.tar.zst
           cp roamming_*_darwin_universal.pkg     roamming_darwin_universal.pkg
           cp roamming_*_windows_amd64_setup.exe  roamming_windows_amd64_setup.exe
 
