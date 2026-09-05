@@ -13,7 +13,7 @@ import (
 
 func TestCredentialsRoundtrip(t *testing.T) {
 	keyring.MockInit()
-	t.Setenv("XDG_CONFIG_HOME", t.TempDir())
+	redirectConfigDir(t)
 
 	if _, err := LoadCredentials(); !errors.Is(err, ErrNotAuthenticated) {
 		t.Fatalf("empty store: err = %v, want ErrNotAuthenticated", err)
@@ -54,13 +54,24 @@ func TestCredentialsRoundtrip(t *testing.T) {
 	}
 }
 
+// redirectConfigDir points the store's legacy-location resolution at a
+// fresh temp directory and restores the original on cleanup. Going
+// through the seam (instead of XDG_CONFIG_HOME) keeps the tests honest
+// on macOS, where os.UserConfigDir ignores that variable.
+func redirectConfigDir(t *testing.T) string {
+	t.Helper()
+	dir := t.TempDir()
+	prev := userConfigDir
+	userConfigDir = func() (string, error) { return dir, nil }
+	t.Cleanup(func() { userConfigDir = prev })
+	return dir
+}
+
 // writeLegacyCredentials plants a credentials.json in the pre-keyring
 // location and returns its path.
 func writeLegacyCredentials(t *testing.T, c *Credentials) string {
 	t.Helper()
-	dir := t.TempDir()
-	t.Setenv("XDG_CONFIG_HOME", dir)
-	path := filepath.Join(dir, "roamming", "credentials.json")
+	path := filepath.Join(redirectConfigDir(t), "roamming", "credentials.json")
 	if err := os.MkdirAll(filepath.Dir(path), 0o700); err != nil {
 		t.Fatalf("mkdir: %v", err)
 	}

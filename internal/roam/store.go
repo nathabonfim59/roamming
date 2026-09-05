@@ -61,11 +61,16 @@ func (c *Credentials) HasScope(s string) bool {
 	return false
 }
 
+// userConfigDir is os.UserConfigDir, kept swappable so tests can
+// redirect the legacy credentials location without depending on
+// platform conventions (XDG_CONFIG_HOME is ignored on macOS).
+var userConfigDir = os.UserConfigDir
+
 // legacyCredentialsPath is where grants were stored as a plaintext JSON
 // file before the keychain move (roamming <= 1.1.3). It only exists so
 // existing installs can be migrated.
 func legacyCredentialsPath() (string, error) {
-	base, err := os.UserConfigDir()
+	base, err := userConfigDir()
 	if err != nil {
 		return "", fmt.Errorf("resolve user config dir: %w", err)
 	}
