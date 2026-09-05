@@ -12,9 +12,15 @@ package reopen
 
 // The Objective-C half of the bridge lives in reopen_darwin.m, which
 // the toolchain compiles and links against AppKit. It resolves glfw's
-// delegate class by name at runtime, so there is deliberately no cgo
-// preamble here: nothing for cgo to paste, nothing for the linker or
-// dyld to resolve, on every platform that never builds this file.
+// delegate class by name at runtime, so the preamble below holds just
+// that one declaration — keep it free of prose and definitions, and
+// keep the blank line above: any comment group touching import "C"
+// becomes the cgo preamble, and its contents are pasted into the
+// generated C verbatim (learned on CI the hard way).
+
+/*
+void roamAttachReopen(void);
+*/
 import "C"
 
 import "sync"
