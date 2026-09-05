@@ -29,7 +29,8 @@ jobs:
         run: |
           sudo apt-get update
           sudo apt-get install -y --no-install-recommends \
-            build-essential pkg-config libgl1-mesa-dev xorg-dev
+            build-essential pkg-config libgl1-mesa-dev xorg-dev \
+            libwayland-dev libxkbcommon-dev
 
       - name: Vet
         run: go vet ./...

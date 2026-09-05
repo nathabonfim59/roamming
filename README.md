@@ -43,7 +43,7 @@ Requires Go 1.24+ and the usual Fyne native dependencies:
 
 ```sh
 # Debian/Ubuntu
-sudo apt install build-essential pkg-config libgl1-mesa-dev xorg-dev
+sudo apt install build-essential pkg-config libgl1-mesa-dev xorg-dev libwayland-dev libxkbcommon-dev
 
 go build -o roamming .
 ```
