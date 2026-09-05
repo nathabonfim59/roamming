@@ -62,6 +62,8 @@ jobs:
     permissions:
       contents: write
     steps:
+      - uses: actions/checkout@v7 # gh release create needs the git context
+
       - name: Download built archives
         uses: actions/download-artifact@v8
         with:
