@@ -2,6 +2,7 @@ package roam
 
 import (
 	"context"
+	"fmt"
 	"io"
 	"net/http"
 	"strings"
@@ -17,18 +18,25 @@ func TestCallbackServerSuccess(t *testing.T) {
 	}
 	defer cbs.close()
 
-	// Simulate the provider redirect in parallel with the wait.
+	// Simulate the provider redirect in parallel with the wait. The
+	// goroutine reports through a buffered channel instead of calling
+	// t.Errorf directly: a *testing.T must not be used from a helper
+	// goroutine after the test may have finished (races on slower
+	// runners, e.g. Windows CI).
+	errc := make(chan error, 1)
 	go func() {
 		resp, err := http.Get("http://" + cbs.addr() + "/callback?code=abc123&state=state123")
 		if err != nil {
-			t.Errorf("simulated redirect: %v", err)
+			errc <- err
 			return
 		}
 		defer resp.Body.Close()
 		body, _ := io.ReadAll(resp.Body)
 		if !strings.Contains(string(body), "Connected") {
-			t.Errorf("success page missing: %s", body)
+			errc <- fmt.Errorf("success page missing: %s", body)
+			return
 		}
+		errc <- nil
 	}()
 
 	ctx, cancel := context.WithTimeout(t.Context(), 2*time.Second)
@@ -39,6 +47,9 @@ func TestCallbackServerSuccess(t *testing.T) {
 	}
 	if code != "abc123" {
 		t.Fatalf("code = %q, want %q", code, "abc123")
+	}
+	if err := <-errc; err != nil {
+		t.Errorf("simulated redirect: %v", err)
 	}
 }
 
