@@ -10,7 +10,7 @@ APP_ICON := internal/ui/appicon.png
 update-logo:
 	test -f $(LOGO_SRC)
 	cp $(LOGO_SRC) $(APP_ICON)
-	@echo "app icon updated ($(APP_ICON)) — run 'make build' to embed it"
+	@echo "app icon updated ($(APP_ICON)); run 'make build' to embed it"
 
 build:
 	go build -o roamming .

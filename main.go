@@ -1,6 +1,6 @@
 // Command roamming is a system-tray desktop app that sets your own
 // external activity indicator in Roam (https://ro.am) through the
-// user.activity API — using only your personal OAuth grant
+// user.activity API, using only your personal OAuth grant
 // (scopes: user:write.activity, user:read.activity).
 package main
 

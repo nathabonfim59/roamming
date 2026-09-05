@@ -2,7 +2,7 @@ version: 2
 
 project_name: roamming
 
-# Master view of the release setup — used by `goreleaser check` and for
+# Master view of the release setup, used by `goreleaser check` and for
 # human reference. Fyne is a CGO app, so it cannot be cross-compiled to
 # every OS from one machine: the release workflow (.github/workflows/
 # release.yml) runs goreleaser with the matching per-OS config from

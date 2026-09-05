@@ -143,7 +143,7 @@ type tokenResponse struct {
 func (a *Auth) refreshLocked(ctx context.Context) error {
 	c := a.creds
 	if c == nil || c.RefreshToken == "" {
-		a.grantLostLocked("No refresh token — sign in again")
+		a.grantLostLocked("No refresh token; sign in again")
 		return ErrNotAuthenticated
 	}
 	form := url.Values{
@@ -160,7 +160,7 @@ func (a *Auth) refreshLocked(ctx context.Context) error {
 	}
 	if resp.Error != "" {
 		if resp.Error == "invalid_grant" {
-			a.grantLostLocked("Your Roam authorization expired — sign in again")
+			a.grantLostLocked("Your Roam authorization expired; sign in again")
 			return fmt.Errorf("refresh rejected: %s", resp.ErrorDescription)
 		}
 		return fmt.Errorf("refresh failed: %s (%s)", resp.Error, resp.ErrorDescription)
@@ -443,14 +443,14 @@ func (c *callbackServer) handle(w http.ResponseWriter, r *http.Request) {
 		fmt.Fprint(w, callbackPage(false, msg))
 		c.result <- callbackResult{err: fmt.Errorf("authorization refused: %s (%s)", errCode, errDesc)}
 	case gotState == "":
-		fmt.Fprint(w, callbackPage(false, "missing state parameter — try again from the app."))
-		c.result <- callbackResult{err: errors.New("authorization callback carried no state — try again")}
+		fmt.Fprint(w, callbackPage(false, "missing state parameter; try again from the app."))
+		c.result <- callbackResult{err: errors.New("authorization callback carried no state; try again")}
 	case gotState != c.wantState:
-		fmt.Fprint(w, callbackPage(false, "state check failed (possible CSRF) — try again from the app."))
-		c.result <- callbackResult{err: errors.New("authorization callback failed the state check (possible CSRF) — try again")}
+		fmt.Fprint(w, callbackPage(false, "state check failed (possible CSRF); try again from the app."))
+		c.result <- callbackResult{err: errors.New("authorization callback failed the state check (possible CSRF); try again")}
 	case code == "":
-		fmt.Fprint(w, callbackPage(false, "no authorization code received — try again from the app."))
-		c.result <- callbackResult{err: errors.New("authorization callback carried no code — try again")}
+		fmt.Fprint(w, callbackPage(false, "no authorization code received; try again from the app."))
+		c.result <- callbackResult{err: errors.New("authorization callback carried no code; try again")}
 	default:
 		fmt.Fprint(w, callbackPage(true, ""))
 		c.result <- callbackResult{code: code}

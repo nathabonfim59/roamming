@@ -24,7 +24,7 @@ import (
 const apiBase = "https://api.ro.am/v1"
 
 // Colors is the curated glow palette the API accepts. Hex values are not
-// part of the API — clients resolve names for rendering.
+// part of the API; clients resolve names for rendering.
 var Colors = []string{
 	"blue", "gold", "gray", "green", "indigo", "lime",
 	"orange", "pink", "purple", "red", "teal", "yellow",
@@ -211,7 +211,7 @@ func (c *Client) do(ctx context.Context, method, path string, in, out any) error
 		if resp.StatusCode == http.StatusUnauthorized {
 			switch apiErr.Code {
 			case "token_revoked":
-				c.auth.GrantLost("Your Roam authorization was revoked — connect again")
+				c.auth.GrantLost("Your Roam authorization was revoked; connect again")
 				return apiErr
 			case "invalid_token":
 				if attempt == 0 {

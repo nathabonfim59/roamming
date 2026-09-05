@@ -43,10 +43,10 @@ const (
 type CountdownStyle int
 
 const (
-	// FixedEnd shows "— back at 15:04 BRT", computed once at start.
+	// FixedEnd shows "· back at 15:04 BRT", computed once at start.
 	// A timer within the server's 1-hour TTL posts exactly once.
 	FixedEnd CountdownStyle = iota
-	// LiveCountdown shows "— back in 24m", re-posted every minute so the
+	// LiveCountdown shows "· back in 24m", re-posted every minute so the
 	// badge text updates on the Roam map.
 	LiveCountdown
 )
@@ -181,7 +181,7 @@ func (m *Manager) Start(cfg Config) error {
 
 // run posts the initial activity, then keeps it alive until the timer
 // ends or the manager is stopped. How often it re-posts depends on the
-// countdown style and timer length — see beatInterval.
+// countdown style and timer length (see beatInterval).
 func (m *Manager) run(ctx context.Context, cfg Config, ext string, endsAt time.Time, cb func(State)) {
 	act, err := m.post(ctx, cfg, ext, endsAt)
 	if ctx.Err() != nil {
@@ -264,8 +264,8 @@ func (m *Manager) post(ctx context.Context, cfg Config, ext string, endsAt time.
 
 // displayFor renders the display for the current moment. Timed
 // activities get a suffix on the title (within the API's 140-code-point
-// limit): a fixed "— back at 15:04 BRT" in the user's timezone, or a
-// live "— back in 24m" for the countdown style. Open-ended activities
+// limit): a fixed "· back at 15:04 BRT" in the user's timezone, or a
+// live "· back in 24m" for the countdown style. Open-ended activities
 // keep the title untouched.
 func displayFor(cfg Config, endsAt time.Time) roam.Display {
 	d := cfg.Display
@@ -278,9 +278,9 @@ func displayFor(cfg Config, endsAt time.Time) roam.Display {
 		if remaining <= 0 {
 			return d
 		}
-		suffix = " — back in " + fmtDuration(remaining)
+		suffix = " · back in " + fmtDuration(remaining)
 	} else {
-		suffix = " — back at " + endsAt.Local().Format("15:04 MST")
+		suffix = " · back at " + endsAt.Local().Format("15:04 MST")
 	}
 	if utf8.RuneCountInString(d.Title)+utf8.RuneCountInString(suffix) <= 140 {
 		d.Title += suffix
@@ -399,7 +399,7 @@ func postTTL(cfg Config, endsAt time.Time) time.Duration {
 //
 //   - open-ended: every 15 min within a 30-min TTL (few posts)
 //   - live countdown: every minute, to refresh the badge text
-//   - fixed end with timer <= 1 h: never — the single post's TTL already
+//   - fixed end with timer <= 1 h: never; the single post's TTL already
 //     covers the end (plus grace), so nothing re-posts
 //   - fixed end with timer > 1 h: every 45 min, within the 1-hour TTL cap
 //

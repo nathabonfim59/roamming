@@ -3,7 +3,7 @@ package ui
 import "image/color"
 
 // paletteHex maps Roam glow palette names to approximate colors for
-// rendering the picker swatches. The API only ever receives the name —
+// rendering the picker swatches. The API only ever receives the name;
 // Roam clients resolve names to their own light/dark hex values.
 var paletteHex = map[string]color.RGBA{
 	"blue":   {0x3B, 0x82, 0xF6, 0xFF},

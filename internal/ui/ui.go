@@ -38,7 +38,7 @@ type timerOption struct {
 }
 
 var timerOptions = []timerOption{
-	{"No timer — until I stop it", 0},
+	{"No timer (until I stop it)", 0},
 	{"15 minutes", 15 * time.Minute},
 	{"30 minutes", 30 * time.Minute},
 	{"45 minutes", 45 * time.Minute},
@@ -260,7 +260,7 @@ func (a *App) buildConnectScreen() {
 
 	intro := widget.NewLabel("Sign in with your own Roam account. This app requests only " +
 		roam.ScopeWriteActivity + " and " + roam.ScopeReadActivity +
-		" — and can only ever act as you, never on behalf of other users.")
+		"; it can only ever act as you, never on behalf of other users.")
 	intro.Wrapping = fyne.TextWrapWord
 
 	note := widget.NewLabel("Register an OAuth app first (Roam Administration -> Developer -> Add ApiClient) " +
@@ -303,7 +303,7 @@ func (a *App) onConnect() {
 	}
 
 	a.connectBtn.Disable()
-	a.waitLabel.SetText("Waiting for authorization — finish the sign-in in your browser (expires in 5 minutes).")
+	a.waitLabel.SetText("Waiting for authorization: finish the sign-in in your browser (expires in 5 minutes).")
 	a.waitActivity.Start()
 	a.waitRow.Show()
 	a.stack.Refresh()
@@ -325,7 +325,7 @@ func (a *App) onConnect() {
 			a.client = roam.NewClient(a.auth)
 			if !creds.HasScope(roam.ScopeWriteActivity) {
 				dialog.NewError(fmt.Errorf(
-					"the OAuth app did not grant %s — setting activities will fail until its scopes include it",
+					"the OAuth app did not grant %s; setting activities will fail until its scopes include it",
 					roam.ScopeWriteActivity), a.win)
 			}
 			a.ensureSession()
@@ -499,8 +499,8 @@ func (a *App) selectedTimer() time.Duration {
 // session.CountdownStyle.
 func styleLabels() []string {
 	return []string{
-		`Fixed end time — "back at 15:04 BRT" (posts once)`,
-		`Live countdown — "back in 24m" (updates every minute)`,
+		`Fixed end time: "back at 15:04 BRT" (posts once)`,
+		`Live countdown: "back in 24m" (updates every minute)`,
 	}
 }
 
@@ -761,7 +761,7 @@ func (a *App) refreshLive() {
 			for _, act := range acts {
 				fmt.Fprintf(&b, "%s %s", act.Display.Emoji, act.Display.Title)
 				if act.Display.Subtitle != "" {
-					fmt.Fprintf(&b, " — %s", act.Display.Subtitle)
+					fmt.Fprintf(&b, " · %s", act.Display.Subtitle)
 				}
 				if act.DND {
 					b.WriteString(" · DND")
@@ -857,7 +857,7 @@ func (a *App) runningTrayText() string {
 	if !end.IsZero() {
 		remaining = fmtRemaining(time.Until(end))
 	}
-	return fmt.Sprintf("%s %s — %s left", s.Display.Emoji, s.Display.Title, remaining)
+	return fmt.Sprintf("%s %s · %s left", s.Display.Emoji, s.Display.Title, remaining)
 }
 
 // ---- helpers --------------------------------------------------------------
