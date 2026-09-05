@@ -13,7 +13,6 @@ import (
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/container"
 	"fyne.io/fyne/v2/test"
-	"fyne.io/fyne/v2/theme"
 
 	"github.com/nathabonfim59/roamming/internal/roam"
 	"github.com/nathabonfim59/roamming/internal/session"
@@ -50,6 +49,7 @@ func capturePNG(t *testing.T, dir, name string, img image.Image) {
 // background tick loop.
 func newGalleryApp() *App {
 	fa := test.NewApp()
+	fa.Settings().SetTheme(roamThemeInstance) // the Roam dark look
 	a := &App{fa: fa, auth: roam.NewAuth()}
 	a.win = fa.NewWindow("Roam Activity")
 	a.win.Resize(fyne.NewSize(620, 940))
@@ -70,8 +70,7 @@ func TestCaptureGalleryScreens(t *testing.T) {
 
 	a := newGalleryApp()
 
-	// Connect screen: fresh install, nothing filled in (light theme).
-	test.ApplyTheme(t, theme.LightTheme())
+	// Connect screen: fresh install, nothing filled in.
 	capturePNG(t, out, "connect.png", a.win.Canvas().Capture())
 
 	// Activity editor: filled in like a real running session. The test
@@ -88,18 +87,17 @@ func TestCaptureGalleryScreens(t *testing.T) {
 	now := time.Now()
 	a.applyState(session.State{
 		Phase:           session.PhaseRunning,
-		Display:         roam.Display{Title: "Heads-down focus time", Subtitle: "Shipping the Roam activity app"},
+		Display:         roam.Display{Title: "Heads-down focus time", Subtitle: "Shipping the Roam activity app", Color: "indigo"},
 		DND:             true,
 		StartedAt:       now.Add(-18 * time.Minute),
 		ServerExpiresAt: now.Add(50 * time.Minute),
 		EndsAt:          now.Add(42 * time.Minute),
 	})
-	a.liveLabel.SetText("Heads-down focus time · DND (expires 15:52)\nAway from keyboard (expires 15:07)\n")
+	a.renderLive([]liveEntry{
+		{color: "indigo", title: "Heads-down focus time", dnd: true, expires: now.Add(50 * time.Minute)},
+		{color: "gold", title: "Coffee break", expires: now.Add(5 * time.Minute)},
+	})
 	capturePNG(t, out, "activity.png", a.win.Canvas().Capture())
-
-	// Same screen in the dark theme.
-	test.ApplyTheme(t, theme.DarkTheme())
-	capturePNG(t, out, "activity-dark.png", a.win.Canvas().Capture())
 }
 
 func TestCaptureGalleryTray(t *testing.T) {

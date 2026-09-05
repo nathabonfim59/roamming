@@ -7,6 +7,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"image/color"
 	"net/url"
 	"slices"
 	"strings"
@@ -14,9 +15,12 @@ import (
 	"unicode/utf8"
 
 	"fyne.io/fyne/v2"
+	"fyne.io/fyne/v2/canvas"
 	"fyne.io/fyne/v2/container"
 	"fyne.io/fyne/v2/dialog"
 	"fyne.io/fyne/v2/driver/desktop"
+	"fyne.io/fyne/v2/layout"
+	"fyne.io/fyne/v2/theme"
 	"fyne.io/fyne/v2/widget"
 
 	"github.com/nathabonfim59/roamming/internal/roam"
@@ -135,10 +139,10 @@ type App struct {
 	dndCheck       *widget.Check
 	timerSelect    *widget.Select
 	styleSelect    *widget.Select
-	stateLabel     *widget.Label
+	stateLine      *widget.RichText
 	countdownLabel *widget.Label
 	startStopBtn   *widget.Button
-	liveLabel      *widget.Label
+	liveList       *fyne.Container
 
 	colorNames   []string // "" (quiet) first, then roam.Colors
 	colorButtons []*widget.Button
@@ -152,7 +156,8 @@ type App struct {
 // New builds the whole UI (window + tray). Call Show, then fa.Run.
 func New(fa fyne.App) *App {
 	a := &App{fa: fa, auth: roam.NewAuth()}
-	fa.SetIcon(AppIcon()) // window/taskbar icon
+	fa.Settings().SetTheme(roamThemeInstance) // Roam dark look, always
+	fa.SetIcon(AppIcon())                     // window/taskbar icon
 	a.win = fa.NewWindow("Roam Activity")
 	a.win.Resize(fyne.NewSize(520, 720))
 	a.win.CenterOnScreen()
@@ -247,38 +252,63 @@ func (a *App) buildConnectScreen() {
 	a.authURLEntry = widget.NewEntry()
 	a.authURLEntry.Disable() // disabled entries remain selectable/copyable
 	a.authURLEntry.SetPlaceHolder("authorize URL (copy it manually if the browser did not open)")
-	a.authURLRow = container.NewVBox(widget.NewLabel("Authorize URL:"), a.authURLEntry)
+	a.authURLRow = container.NewVBox(fieldLabel("Authorize URL"), a.authURLEntry)
 
 	a.connectBtn = widget.NewButton("Connect with Roam", a.onConnect)
 	a.connectBtn.Importance = widget.HighImportance
 
-	form := widget.NewForm(
-		widget.NewFormItem("Client ID", a.clientIDEntry),
-		widget.NewFormItem("Client Secret (optional)", a.clientSecretEntry),
-		widget.NewFormItem("Redirect URI", a.redirectEntry),
+	logo := canvas.NewImageFromResource(AppIcon())
+	logo.FillMode = canvas.ImageFillContain
+	logo.SetMinSize(fyne.NewSize(56, 56))
+	head := container.New(layout.NewCustomPaddedVBoxLayout(5),
+		container.NewCenter(logo),
+		container.NewCenter(wordmark()),
+		container.NewCenter(tagline("Connect your Roam account")),
 	)
 
-	intro := widget.NewLabel("Sign in with your own Roam account. This app requests only " +
+	intro := mutedText("Sign in with your own Roam account. This app requests only " +
 		roam.ScopeWriteActivity + " and " + roam.ScopeReadActivity +
 		"; it can only ever act as you, never on behalf of other users.")
-	intro.Wrapping = fyne.TextWrapWord
 
-	note := widget.NewLabel("Register an OAuth app first (Roam Administration -> Developer -> Add ApiClient) " +
+	note := mutedText("Register an OAuth app first (Roam Administration -> Developer -> Add ApiClient) " +
 		"and add this exact redirect URI to it:")
-	note.Wrapping = fyne.TextWrapWord
 
-	a.connectBox = container.NewVBox(
-		widget.NewCard("Not connected to Roam", "", container.NewVBox(
-			intro,
-			note,
-			form, // includes the Redirect URI field the note refers to
-			a.connectBtn,
-			a.waitRow,
-			a.authURLRow,
-		)),
+	fields := container.New(layout.NewCustomPaddedVBoxLayout(12),
+		labeledField("Client ID", a.clientIDEntry),
+		labeledField("Client Secret (optional)", a.clientSecretEntry),
+		labeledField("Redirect URI", a.redirectEntry),
 	)
+
+	card := newSurface(container.New(layout.NewCustomPaddedVBoxLayout(12),
+		head,
+		intro,
+		note,
+		fields,
+		fullWidth(a.connectBtn),
+		a.waitRow,
+		a.authURLRow,
+	))
+	// the card keeps its natural height (Roam-modal style), not the
+	// full window height
+	a.connectBox = container.New(layout.NewCustomPaddedLayout(28, 24, 14, 14),
+		container.NewVBox(card))
 	a.waitRow.Hide()
 	a.authURLRow.Hide()
+}
+
+// wordmark is the app name as drawn on the connect card.
+func wordmark() *canvas.Text {
+	t := canvas.NewText("roamming", colText)
+	t.TextStyle.Bold = true
+	t.TextSize = roamThemeInstance.Size(theme.SizeNameHeadingText)
+	return t
+}
+
+// tagline is the muted line under the wordmark.
+func tagline(text string) *canvas.Text {
+	t := canvas.NewText(text, colTextMut)
+	t.TextSize = 12
+	return t
 }
 
 // onConnect saves the settings and runs the browser OAuth flow with the
@@ -339,9 +369,24 @@ func (a *App) onConnect() {
 func (a *App) buildActivityScreen() {
 	a.accountLabel = widget.NewLabel("")
 	a.accountLabel.Wrapping = fyne.TextWrapWord
+	a.accountLabel.Importance = widget.LowImportance
 	disconnectBtn := widget.NewButton("Disconnect", a.onDisconnect)
 	disconnectBtn.Importance = widget.LowImportance
 	accountRow := container.NewBorder(nil, nil, nil, disconnectBtn, a.accountLabel)
+
+	// Status card: colored presence dot + current activity + the action.
+	a.stateLine = widget.NewRichText()
+	a.stateLine.Wrapping = fyne.TextWrapWord
+	a.setStatusLine(colDotIdle, "No activity set")
+	a.countdownLabel = widget.NewLabel("")
+	a.countdownLabel.Importance = widget.LowImportance
+	a.startStopBtn = widget.NewButton("Start activity", a.onStartStop)
+	a.startStopBtn.Importance = widget.HighImportance
+	statusCard := titledSurface("Status", container.New(layout.NewCustomPaddedVBoxLayout(8),
+		a.stateLine,
+		a.countdownLabel,
+		fullWidth(a.startStopBtn),
+	))
 
 	a.presetSelect = widget.NewSelect(presetLabels(), a.applyPreset)
 	a.presetSelect.PlaceHolder = "Pick a preset status…"
@@ -377,50 +422,32 @@ func (a *App) buildActivityScreen() {
 	a.styleSelect = widget.NewSelect(styleLabels(), nil)
 	a.styleSelect.SetSelected(styleLabels()[0])
 
-	a.stateLabel = widget.NewLabel("No activity set")
-	a.stateLabel.TextStyle = fyne.TextStyle{Bold: true}
-	a.stateLabel.Wrapping = fyne.TextWrapWord
-	a.countdownLabel = widget.NewLabel("")
-	a.countdownLabel.Importance = widget.LowImportance
-	a.startStopBtn = widget.NewButton("Start activity", a.onStartStop)
-	a.startStopBtn.Importance = widget.HighImportance
+	editorRows := container.New(layout.NewCustomPaddedVBoxLayout(10),
+		labeledField("Preset", a.presetSelect),
+		labeledField("Emoji", emojiRow),
+		labeledField("Status text", a.titleEntry),
+		labeledField("Subtitle (optional)", a.subtitleEntry),
+		labeledField("Glow color (none = quiet badge)", a.colorRow),
+		a.dndCheck,
+		container.NewGridWithColumns(2,
+			labeledField("Timer", a.timerSelect),
+			labeledField("End-time style", a.styleSelect),
+		),
+	)
+	editorCard := titledSurface("Set your external activity", editorRows)
 
-	a.liveLabel = widget.NewLabel("")
-	a.liveLabel.Wrapping = fyne.TextWrapWord
+	a.liveList = container.NewVBox()
 	refreshLiveBtn := widget.NewButton("Refresh", a.refreshLive)
 	refreshLiveBtn.Importance = widget.LowImportance
-	liveHeader := container.NewBorder(nil, nil, nil, refreshLiveBtn,
-		widget.NewLabel("Live on the map (all integrations):"))
+	liveCard := titledSurface("Live on the map (all integrations)", a.liveList, refreshLiveBtn)
 
-	editor := widget.NewCard("Set your external activity", "", container.NewVBox(
-		a.presetSelect,
-		emojiRow,
-		a.titleEntry,
-		a.subtitleEntry,
-		widget.NewLabel("Glow color (none = quiet badge):"),
-		a.colorRow,
-		a.dndCheck,
-		widget.NewLabel("Timer (optional):"),
-		a.timerSelect,
-		widget.NewLabel("End-time style (with a timer):"),
-		a.styleSelect,
-	))
-	status := widget.NewCard("Status", "", container.NewVBox(
-		a.stateLabel,
-		a.countdownLabel,
-		a.startStopBtn,
-	))
-	live := widget.NewCard("", "", container.NewVBox(
-		liveHeader,
-		a.liveLabel,
-	))
-
-	a.activityBox = container.NewVBox(
-		accountRow,
-		editor,
-		status,
-		live,
-	)
+	a.activityBox = container.New(layout.NewCustomPaddedLayout(14, 20, 14, 14),
+		container.New(layout.NewCustomPaddedVBoxLayout(12),
+			accountRow,
+			statusCard,
+			editorCard,
+			liveCard,
+		))
 	a.loadLastConfig()
 }
 
@@ -496,11 +523,11 @@ func (a *App) selectedTimer() time.Duration {
 }
 
 // styleLabels are the user-facing countdown-style options; index maps to
-// session.CountdownStyle.
+// session.CountdownStyle. Kept short so two fit side by side.
 func styleLabels() []string {
 	return []string{
-		`Fixed end time: "back at 15:04 BRT" (posts once)`,
-		`Live countdown: "back in 24m" (updates every minute)`,
+		`Fixed ("back at 15:04")`,
+		`Live ("back in 24m")`,
 	}
 }
 
@@ -669,35 +696,66 @@ func (a *App) applyState(s session.State) {
 	a.state = s
 	switch s.Phase {
 	case session.PhaseStarting:
-		a.stateLabel.SetText("Setting activity…")
+		a.setStatusLine(colAmber, "Setting activity…")
 		a.countdownLabel.SetText("")
+		a.startStopBtn.Importance = widget.MediumImportance
 		a.startStopBtn.SetText("Start activity")
 		a.startStopBtn.Disable()
 	case session.PhaseRunning:
-		a.stateLabel.SetText(s.Display.Emoji + "  " + s.Display.Title)
+		text := s.Display.Emoji + "  " + s.Display.Title
 		if s.DND {
-			a.stateLabel.SetText(a.stateLabel.Text + "  ·  DND")
+			text += "  ·  DND"
 		}
+		var dot color.Color = colLime
+		if c, ok := swatchColor(s.Display.Color); ok {
+			dot = c
+		}
+		a.setStatusLine(dot, text)
+		a.startStopBtn.Importance = widget.DangerImportance
 		a.startStopBtn.SetText("Stop activity")
 		a.startStopBtn.Enable()
-		a.startStopBtn.Importance = widget.DangerImportance
 		a.setCountdown(s)
 	case session.PhaseStopping:
-		a.stateLabel.SetText("Clearing activity…")
+		a.setStatusLine(colAmber, "Clearing activity…")
+		a.startStopBtn.Importance = widget.MediumImportance
 		a.startStopBtn.Disable()
 	case session.PhaseIdle:
 		a.countdownLabel.SetText("")
+		dot := colDotIdle
+		text := "No activity set"
+		if s.LastError != nil {
+			dot, text = colRed, "Failed: "+s.LastError.Error()
+		}
+		a.setStatusLine(dot, text)
+		a.startStopBtn.Importance = widget.HighImportance
 		a.startStopBtn.SetText("Start activity")
 		a.startStopBtn.Enable()
-		a.startStopBtn.Importance = widget.HighImportance
-		if s.LastError != nil {
-			a.stateLabel.SetText("Failed: " + s.LastError.Error())
-		} else {
-			a.stateLabel.SetText("No activity set")
-		}
 	}
 	a.refreshLive()
 	a.refreshTray()
+}
+
+// setStatusLine renders the Status card line: a colored presence dot
+// followed by bold text, on one baseline.
+func (a *App) setStatusLine(dot color.Color, text string) {
+	a.stateLine.Segments = []widget.RichTextSegment{
+		&widget.TextSegment{
+			Text:  "●  ",
+			Style: widget.RichTextStyle{Inline: true, ColorName: dotColorName(dot), TextStyle: fyne.TextStyle{Bold: true}},
+		},
+		&widget.TextSegment{
+			Text:  text,
+			Style: widget.RichTextStyle{Inline: true, ColorName: theme.ColorNameForeground, TextStyle: fyne.TextStyle{Bold: true}},
+		},
+	}
+	a.stateLine.Refresh()
+}
+
+// dotColorName maps any color to a theme color name that roamTheme
+// resolves back to it, for colored text glyphs.
+func dotColorName(c color.Color) fyne.ThemeColorName {
+	r, g, b, _ := c.RGBA() // 16-bit premultiplied
+	return fyne.ThemeColorName(fmt.Sprintf("dot-%02x%02x%02x", uint8(r>>8), uint8(g>>8), uint8(b>>8)))
 }
 
 func (a *App) setCountdown(s session.State) {
@@ -735,9 +793,81 @@ func (a *App) tick() {
 	a.refreshTray()
 }
 
+// liveEntry is one row in the "live on the map" list.
+type liveEntry struct {
+	color    string // Roam glow palette name; "" = quiet
+	emoji    string
+	title    string
+	subtitle string
+	dnd      bool
+	expires  time.Time
+}
+
+// renderLive redraws the live list (UI thread).
+func (a *App) renderLive(entries []liveEntry) {
+	a.liveList.Objects = a.liveList.Objects[:0]
+	if len(entries) == 0 {
+		a.liveList.Add(mutedText("Nothing live right now."))
+		a.liveList.Refresh()
+		return
+	}
+	for _, e := range entries {
+		a.liveList.Add(liveRow(e))
+	}
+	a.liveList.Refresh()
+}
+
+// renderLiveError replaces the live list with an error note.
+func (a *App) renderLiveError(err error) {
+	a.liveList.Objects = a.liveList.Objects[:0]
+	l := widget.NewLabel("Could not load live activities: " + err.Error())
+	l.Importance = widget.DangerImportance
+	l.Wrapping = fyne.TextWrapWord
+	a.liveList.Add(l)
+	a.liveList.Refresh()
+}
+
+// liveRow is a Roam-presence-style line: colored dot, title, muted tail.
+func liveRow(e liveEntry) fyne.CanvasObject {
+	var dot color.Color = colDotIdle
+	if c, ok := swatchColor(e.color); ok {
+		dot = c
+	}
+	title := strings.TrimSpace(strings.TrimSpace(e.emoji) + " " + e.title)
+	segs := []widget.RichTextSegment{
+		&widget.TextSegment{
+			Text:  "●",
+			Style: widget.RichTextStyle{Inline: true, ColorName: dotColorName(dot)},
+		},
+		&widget.TextSegment{
+			Text:  " " + title,
+			Style: widget.RichTextStyle{Inline: true, ColorName: theme.ColorNameForeground},
+		},
+	}
+	var tail strings.Builder
+	if e.subtitle != "" {
+		tail.WriteString(" · " + e.subtitle)
+	}
+	if e.dnd {
+		tail.WriteString(" · DND")
+	}
+	if !e.expires.IsZero() {
+		fmt.Fprintf(&tail, "  ·  expires %s", e.expires.Local().Format("15:04"))
+	}
+	if tail.Len() > 0 {
+		segs = append(segs, &widget.TextSegment{
+			Text:  tail.String(),
+			Style: widget.RichTextStyle{Inline: true, ColorName: theme.ColorNameDisabled, SizeName: theme.SizeNameCaptionText},
+		})
+	}
+	text := widget.NewRichText(segs...)
+	text.Wrapping = fyne.TextWrapWord
+	return text
+}
+
 // refreshLive updates the "live on the map" list from user.activity.list.
 func (a *App) refreshLive() {
-	if a.client == nil || a.mgr == nil || a.liveLabel == nil {
+	if a.client == nil || a.mgr == nil || a.liveList == nil {
 		return
 	}
 	userID, _, _ := a.auth.Identity()
@@ -750,25 +880,21 @@ func (a *App) refreshLive() {
 		acts, err := a.client.ListActivities(ctx, userID)
 		fyne.Do(func() {
 			if err != nil {
-				a.liveLabel.SetText("Could not load live activities: " + err.Error())
+				a.renderLiveError(err)
 				return
 			}
-			if len(acts) == 0 {
-				a.liveLabel.SetText("Nothing live right now.")
-				return
-			}
-			var b strings.Builder
-			for _, act := range acts {
-				fmt.Fprintf(&b, "%s %s", act.Display.Emoji, act.Display.Title)
-				if act.Display.Subtitle != "" {
-					fmt.Fprintf(&b, " · %s", act.Display.Subtitle)
+			entries := make([]liveEntry, len(acts))
+			for i, act := range acts {
+				entries[i] = liveEntry{
+					color:    act.Display.Color,
+					emoji:    act.Display.Emoji,
+					title:    act.Display.Title,
+					subtitle: act.Display.Subtitle,
+					dnd:      act.DND,
+					expires:  act.ExpiresAt,
 				}
-				if act.DND {
-					b.WriteString(" · DND")
-				}
-				fmt.Fprintf(&b, "  (expires %s)\n", act.ExpiresAt.Local().Format("15:04"))
 			}
-			a.liveLabel.SetText(b.String())
+			a.renderLive(entries)
 		})
 	}()
 }

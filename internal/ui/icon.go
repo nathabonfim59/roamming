@@ -147,7 +147,7 @@ func swatchIcon(c color.RGBA, selected bool) fyne.Resource {
 	cx, cy := float64(size)/2, float64(size)/2
 	outer := float64(size)/2 - 1
 	inner := outer - 3
-	ring := color.RGBA{0x22, 0x22, 0x22, 0xFF}
+	ring := color.RGBA{0xf0, 0xf2, 0xf5, 0xFF} // near-white, like Roam's selection outline
 
 	for y := range size {
 		for x := range size {

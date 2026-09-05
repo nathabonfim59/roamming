@@ -21,13 +21,19 @@ every call to the token owner.
 
 ## Gallery
 
+The UI follows Roam's own design language: near-black layered surfaces,
+rounded cards, pill buttons, muted secondary text and the lime accent,
+set in bundled Inter.
+
 | Connect | Set an activity |
 | --- | --- |
 | ![Connect screen](docs/gallery/connect.png) | ![Activity editor](docs/gallery/activity.png) |
 
-| Dark theme | Tray states (idle, running, error) |
-| --- | --- |
-| ![Dark theme](docs/gallery/activity-dark.png) | ![Tray states](docs/gallery/tray-states.png) |
+Tray states (idle, running, error):
+
+<p align="center">
+  <img src="docs/gallery/tray-states.png" alt="Tray icon states: idle, running, error">
+</p>
 
 These are rendered from the real UI by an offscreen test, so they stay in
 sync with the code. Regenerate after UI changes with:
