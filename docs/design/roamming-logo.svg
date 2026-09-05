@@ -11,7 +11,6 @@
    sodipodi:docname="roamming-logo.svg"
    xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape"
    xmlns:sodipodi="http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd"
-   xmlns:xlink="http://www.w3.org/1999/xlink"
    xmlns="http://www.w3.org/2000/svg"
    xmlns:svg="http://www.w3.org/2000/svg">
   <sodipodi:namedview
@@ -24,15 +23,15 @@
      inkscape:pagecheckerboard="0"
      inkscape:deskcolor="#d1d1d1"
      inkscape:document-units="px"
-     inkscape:zoom="0.35965313"
-     inkscape:cx="861.94163"
-     inkscape:cy="201.58312"
+     inkscape:zoom="1.0172527"
+     inkscape:cx="288.03071"
+     inkscape:cy="537.23133"
      inkscape:window-width="1528"
      inkscape:window-height="920"
      inkscape:window-x="0"
      inkscape:window-y="0"
      inkscape:window-maximized="0"
-     inkscape:current-layer="g20"
+     inkscape:current-layer="g27"
      showguides="true">
     <sodipodi:guide
        position="86.64193,62.275539"
@@ -73,31 +72,6 @@
   </sodipodi:namedview>
   <defs
      id="defs1">
-    <linearGradient
-       id="linearGradient33"
-       inkscape:collect="always">
-      <stop
-         style="stop-color:#8f8f8f;stop-opacity:1;"
-         offset="0"
-         id="stop33" />
-      <stop
-         style="stop-color:#e2e2e2;stop-opacity:1;"
-         offset="0.5"
-         id="stop36" />
-      <stop
-         style="stop-color:#8f8f8f;stop-opacity:1;"
-         offset="1"
-         id="stop34" />
-    </linearGradient>
-    <linearGradient
-       inkscape:collect="always"
-       xlink:href="#linearGradient33"
-       id="linearGradient34"
-       x1="36.005714"
-       y1="34.489311"
-       x2="107.75708"
-       y2="104.87376"
-       gradientUnits="userSpaceOnUse" />
     <meshgradient
        inkscape:collect="always"
        id="meshgradient36"
@@ -127,15 +101,6 @@
         </meshpatch>
       </meshrow>
     </meshgradient>
-    <linearGradient
-       inkscape:collect="always"
-       xlink:href="#linearGradient33"
-       id="linearGradient2"
-       gradientUnits="userSpaceOnUse"
-       x1="36.005714"
-       y1="34.489311"
-       x2="107.75708"
-       y2="104.87376" />
   </defs>
   <g
      inkscape:label="Layer 1"
@@ -147,7 +112,8 @@
        transform="translate(14.424288,11.222944)">
       <g
          id="g22"
-         transform="translate(0,1.0583334)">
+         transform="translate(0,1.0583334)"
+         inkscape:label="logo-dark">
         <g
            id="g10"
            transform="translate(-21.166667,3.6855515)">
@@ -188,55 +154,53 @@
          id="g27"
          transform="translate(-4.138733,130.13289)">
         <g
-           id="g26"
-           transform="translate(-21.166667,3.6855515)"
+           id="g5"
+           inkscape:label="background"
+           transform="translate(-21.166485,3.6855515)"
            style="stroke:#0e0e10;stroke-opacity:1">
+          <rect
+             style="opacity:1;fill:#0b0a10;fill-opacity:1;stroke:none;stroke-width:1.6;stroke-dasharray:none;stroke-opacity:1"
+             id="rect1"
+             width="70.151001"
+             height="68.784447"
+             x="36.805714"
+             y="35.28931"
+             ry="18.943312"
+             inkscape:label="background" />
           <g
-             id="g2"
-             transform="translate(1.8238696e-4)">
+             id="g1"
+             style="opacity:0.164765;stroke:none">
             <rect
-               style="opacity:1;fill:#0b0a10;fill-opacity:1;stroke:url(#linearGradient2);stroke-width:1.6;stroke-dasharray:none;stroke-opacity:1"
-               id="rect1"
+               style="opacity:1;fill:url(#meshgradient36);stroke:none;stroke-width:1.6;stroke-dasharray:none;stroke-opacity:1"
+               id="rect31"
                width="70.151001"
                height="68.784447"
                x="36.805714"
                y="35.28931"
-               ry="18.943312"
-               inkscape:label="background" />
-            <g
-               id="g1"
-               style="opacity:0.164765">
-              <rect
-                 style="opacity:1;fill:url(#meshgradient36);stroke:url(#linearGradient34);stroke-width:1.6;stroke-dasharray:none;stroke-opacity:1"
-                 id="rect31"
-                 width="70.151001"
-                 height="68.784447"
-                 x="36.805714"
-                 y="35.28931"
-                 ry="18.943312" />
-            </g>
-            <g
-               id="g31"
-               transform="translate(0,1.0583333)"
-               style="opacity:1;mix-blend-mode:lighten">
-              <path
-                 d="m 71.881606,48.962032 a 20.71938,20.71938 0 0 0 -20.719709,20.71929 20.71938,20.71938 0 0 0 10.475442,18.000157 10.360638,10.360638 0 0 1 0.200547,-1.00903 16.227475,16.227475 0 0 1 -6.183818,-12.72929 16.227475,16.227475 0 0 1 16.227538,-16.227537 16.227475,16.227475 0 0 1 16.227536,16.227537 16.227475,16.227475 0 0 1 -6.183817,12.728871 10.360638,10.360638 0 0 1 0.200548,1.009449 20.71938,20.71938 0 0 0 10.475023,-18.000157 20.71938,20.71938 0 0 0 -20.71929,-20.71929 z"
-                 style="opacity:1;fill:none;stroke:#ffffff;stroke-width:1.93201;stroke-opacity:1"
-                 id="path22" />
-              <path
-                 d="m 61.837886,86.672449 a 16.227475,16.227475 0 0 0 10.04372,3.498247 16.227475,16.227475 0 0 0 10.043719,-3.498666 10.360638,10.360638 0 0 0 -10.043719,-7.860359 10.360638,10.360638 0 0 0 -10.04372,7.860778 z"
-                 style="opacity:1;fill:none;stroke:#ffffff;stroke-width:1.93201;stroke-opacity:1"
-                 id="path24" />
-              <path
-                 d="m 82.125873,87.681479 a 10.360638,10.360638 0 0 0 -0.200548,-1.009449 16.227475,16.227475 0 0 1 -10.043719,3.498666 16.227475,16.227475 0 0 1 -10.04372,-3.498247 10.360638,10.360638 0 0 0 -0.200547,1.00903 20.71938,20.71938 0 0 0 10.244267,2.71955 20.71938,20.71938 0 0 0 10.244267,-2.71955 z"
-                 style="opacity:1;stroke:#ffffff;stroke-width:1.93201;stroke-opacity:1"
-                 id="path25" />
-              <path
-                 d="m 71.881606,78.811671 a 4.8687146,4.8687146 0 0 0 4.868513,-4.868512 4.8687146,4.8687146 0 0 0 -4.868513,-4.868933 4.8687146,4.8687146 0 0 0 -4.868932,4.868933 4.8687146,4.8687146 0 0 0 4.868932,4.868512 z"
-                 style="opacity:1;fill:none;stroke:#ffffff;stroke-width:1.93201;stroke-opacity:1"
-                 id="path26" />
-            </g>
+               ry="18.943312" />
           </g>
+        </g>
+        <g
+           id="g31"
+           transform="matrix(1.2638681,0,0,1.2638681,-40.13369,-13.642847)"
+           style="mix-blend-mode:lighten;stroke:#0e0e10;stroke-opacity:1"
+           inkscape:label="logo-light">
+          <path
+             d="m 71.881606,48.962032 a 20.71938,20.71938 0 0 0 -20.719709,20.71929 20.71938,20.71938 0 0 0 10.475442,18.000157 10.360638,10.360638 0 0 1 0.200547,-1.00903 16.227475,16.227475 0 0 1 -6.183818,-12.72929 16.227475,16.227475 0 0 1 16.227538,-16.227537 16.227475,16.227475 0 0 1 16.227536,16.227537 16.227475,16.227475 0 0 1 -6.183817,12.728871 10.360638,10.360638 0 0 1 0.200548,1.009449 20.71938,20.71938 0 0 0 10.475023,-18.000157 20.71938,20.71938 0 0 0 -20.71929,-20.71929 z"
+             style="opacity:1;fill:none;stroke:#ffffff;stroke-width:1.93201;stroke-opacity:1"
+             id="path22" />
+          <path
+             d="m 61.837886,86.672449 a 16.227475,16.227475 0 0 0 10.04372,3.498247 16.227475,16.227475 0 0 0 10.043719,-3.498666 10.360638,10.360638 0 0 0 -10.043719,-7.860359 10.360638,10.360638 0 0 0 -10.04372,7.860778 z"
+             style="opacity:1;fill:none;stroke:#ffffff;stroke-width:1.93201;stroke-opacity:1"
+             id="path24" />
+          <path
+             d="m 82.125873,87.681479 a 10.360638,10.360638 0 0 0 -0.200548,-1.009449 16.227475,16.227475 0 0 1 -10.043719,3.498666 16.227475,16.227475 0 0 1 -10.04372,-3.498247 10.360638,10.360638 0 0 0 -0.200547,1.00903 20.71938,20.71938 0 0 0 10.244267,2.71955 20.71938,20.71938 0 0 0 10.244267,-2.71955 z"
+             style="opacity:1;stroke:#ffffff;stroke-width:1.93201;stroke-opacity:1"
+             id="path25" />
+          <path
+             d="m 71.881606,78.811671 a 4.8687146,4.8687146 0 0 0 4.868513,-4.868512 4.8687146,4.8687146 0 0 0 -4.868513,-4.868933 4.8687146,4.8687146 0 0 0 -4.868932,4.868933 4.8687146,4.8687146 0 0 0 4.868932,4.868512 z"
+             style="opacity:1;fill:none;stroke:#ffffff;stroke-width:1.93201;stroke-opacity:1"
+             id="path26" />
         </g>
       </g>
     </g>
