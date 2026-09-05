@@ -3,7 +3,16 @@
 LOGO_SRC := docs/design/favicon.png
 APP_ICON := internal/ui/appicon.png
 
-.PHONY: update-logo icons dist-linux build test
+.PHONY: update-logo icons dist-linux build test cgocheck
+
+# Syntax-check the darwin-only cgo + Objective-C bridge on any host.
+# GOOS=darwin go vet cannot run without a macOS toolchain, so translate
+# the Go/cgo sources with the platform-independent `go tool cgo` and
+# parse the results (plus the .m file) with the host clang against
+# stub AppKit headers. Catches prose-in-preamble, missing declarations
+# and .m syntax errors before CI does. Needs clang.
+cgocheck:
+	go run ./tools/cgocheck
 
 # Re-embed the canonical logo as the app/tray icon. Rebuild afterwards:
 # the PNG is compiled into the binary via go:embed.
