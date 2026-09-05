@@ -29,12 +29,16 @@ var (
 
 // Palette, sampled from the Roam clients.
 var (
-	colWindow    = color.NRGBA{0x0f, 0x11, 0x14, 0xff} // window background
-	colSurface   = color.NRGBA{0x17, 0x1b, 0x20, 0xff} // cards
-	colBorder    = color.NRGBA{0x28, 0x2e, 0x36, 0xff} // hairline card/input borders
-	colButton    = color.NRGBA{0x24, 0x2a, 0x31, 0xff} // buttons, selects, swatch tiles
-	colHover     = color.NRGBA{0x2c, 0x33, 0x3b, 0xff} // hovered button
-	colPressed   = color.NRGBA{0x1d, 0x22, 0x28, 0xff} // pressed button
+	colWindow  = color.NRGBA{0x0f, 0x11, 0x14, 0xff} // window background
+	colSurface = color.NRGBA{0x17, 0x1b, 0x20, 0xff} // cards
+	colBorder  = color.NRGBA{0x28, 0x2e, 0x36, 0xff} // hairline card/input borders
+	colButton  = color.NRGBA{0x24, 0x2a, 0x31, 0xff} // buttons, selects, swatch tiles
+	// Hover/press are translucent overlays: Fyne alpha-blends them over
+	// the button's own background, so the button just lightens (hover)
+	// or darkens (tap) and its text color — dark on lime, white on gray
+	// — stays legible.
+	colHover     = color.NRGBA{0xff, 0xff, 0xff, 0x14}
+	colPressed   = color.NRGBA{0x00, 0x00, 0x00, 0x33}
 	colDisButton = color.NRGBA{0x1a, 0x1e, 0x24, 0xff}
 	colInput     = color.NRGBA{0x1e, 0x23, 0x2a, 0xff} // entry fields
 
