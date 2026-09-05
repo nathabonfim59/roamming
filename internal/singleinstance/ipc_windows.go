@@ -36,7 +36,9 @@ func listen(path string) (<-chan struct{}, error) {
 	if err != nil {
 		return nil, err
 	}
-	activated := make(chan struct{})
+	// Buffer of one: a signal sent while the primary is busy must be
+	// kept for it, not dropped — coalescing collapses extras.
+	activated := make(chan struct{}, 1)
 	go servePipe(h, activated)
 	return activated, nil
 }

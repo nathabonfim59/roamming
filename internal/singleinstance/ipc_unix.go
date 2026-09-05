@@ -16,7 +16,7 @@ func listen(path string) (<-chan struct{}, error) {
 	if err != nil {
 		return nil, err
 	}
-	activated := make(chan struct{})
+	activated := make(chan struct{}, 1)
 	go func() {
 		defer ln.Close()
 		for {
@@ -27,7 +27,7 @@ func listen(path string) (<-chan struct{}, error) {
 			_ = c.Close() // the connect itself is the signal
 			select {
 			case activated <- struct{}{}:
-			default: // coalesce: one show is enough
+			default: // coalesce: collapse to one pending show, keep it
 			}
 		}
 	}()

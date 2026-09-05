@@ -14,7 +14,9 @@ import (
 // wins and receives activate signals; a second Acquire (what a second
 // launch does) reports not-primary after notifying the primary.
 func TestAcquireElectsSinglePrimary(t *testing.T) {
-	id := fmt.Sprintf("io.github.nathabonfim59.roamming.test.%d", time.Now().UnixNano())
+	// Short, pid-unique name: macOS unix sockets cap sun_path at 104
+	// bytes, and a long temp dir plus a long base name eats the rest.
+	id := fmt.Sprintf("singleinstance.test.%d", os.Getpid())
 	dir := runtimeDir()
 	uid := os.Getuid()
 	t.Cleanup(func() {
