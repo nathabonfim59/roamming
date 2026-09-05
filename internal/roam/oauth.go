@@ -59,7 +59,8 @@ type Auth struct {
 
 // NewAuth loads any previously stored grant.
 func NewAuth() *Auth {
-	return &Auth{http: &http.Client{Timeout: 30 * time.Second}}
+	creds, _ := LoadCredentials()
+	return &Auth{creds: creds, http: &http.Client{Timeout: 30 * time.Second}}
 }
 
 // OnGrantLost registers a callback fired (on its own goroutine) when the

@@ -7,9 +7,49 @@ import (
 	"path/filepath"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/zalando/go-keyring"
 )
+
+func TestAuthRestoresCredentialsAfterRestart(t *testing.T) {
+	keyring.MockInit()
+	redirectConfigDir(t)
+
+	if NewAuth().Connected() {
+		t.Fatal("fresh install should be disconnected")
+	}
+	if err := SaveCredentials(&Credentials{
+		ClientID: "cid", AccessToken: "at", RefreshToken: "rt",
+		ExpiresAt: time.Now().Add(time.Hour),
+		UserID:    "uid", UserName: "Jane", RoamName: "Acme",
+	}); err != nil {
+		t.Fatal(err)
+	}
+
+	// Each new Auth represents a launch; quitting leaves the saved grant intact.
+	for range 2 {
+		auth := NewAuth()
+		if !auth.Connected() {
+			t.Fatal("restart lost the saved connection")
+		}
+		if token, err := auth.Access(t.Context()); err != nil || token != "at" {
+			t.Fatalf("restored access token = %q, err = %v", token, err)
+		}
+		if id, name, roam := auth.Identity(); id != "uid" || name != "Jane" || roam != "Acme" {
+			t.Fatalf("restored identity = %q, %q, %q", id, name, roam)
+		}
+		if creds, ok := auth.Creds(); !ok || creds.RefreshToken != "rt" || creds.ClientID != "cid" {
+			t.Fatal("restart lost refresh credentials")
+		}
+	}
+	if err := ClearCredentials(); err != nil {
+		t.Fatal(err)
+	}
+	if NewAuth().Connected() {
+		t.Fatal("cleared credentials should stay disconnected after restart")
+	}
+}
 
 func TestCredentialsRoundtrip(t *testing.T) {
 	keyring.MockInit()
