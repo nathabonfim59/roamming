@@ -10,6 +10,7 @@ import (
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/app"
 
+	"github.com/nathabonfim59/roamming/internal/reopen"
 	"github.com/nathabonfim59/roamming/internal/singleinstance"
 	"github.com/nathabonfim59/roamming/internal/ui"
 )
@@ -43,6 +44,10 @@ func main() {
 			}
 		}()
 	}
+	// macOS only: re-opening the running bundle (Finder, Spotlight,
+	// `open -a`) restores the window; LaunchServices starts no second
+	// process, so the singleinstance hand-off never fires there.
+	reopen.Listen(func() { fyne.Do(u.Activate) })
 
 	a.Run()
 }
