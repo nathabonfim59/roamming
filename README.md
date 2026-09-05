@@ -42,6 +42,34 @@ sync with the code. Regenerate after UI changes with:
 ROAMMING_CAPTURE_GALLERY=1 go test ./internal/ui -run TestCaptureGallery
 ```
 
+## Install
+
+Grab an installer from the
+[latest release](https://github.com/nathabonfim59/roamming/releases/latest) —
+every one of them registers roamming to start when you log in, so the tray
+app can keep your activity current:
+
+| Platform | File | Installs to | Autostart |
+| --- | --- | --- | --- |
+| Debian/Ubuntu | `roamming_*_amd64.deb` | `/usr/bin/roamming` | systemd user unit (enabled via `systemctl --global`) |
+| RHEL/Fedora | `roamming-*.x86_64.rpm` | `/usr/bin/roamming` | same |
+| Arch Linux | `roamming-*-x86_64.pkg.tar.zst` | `/usr/bin/roamming` | same |
+| macOS | `roamming_*_darwin_*.pkg` | `/Applications/roamming.app` | LaunchAgent (`/Library/LaunchAgents`) |
+| Windows | `roamming_*_windows_amd64_setup.exe` | `%LOCALAPPDATA%\Programs\roamming` | `HKCU\...\Run` (opt-out checkbox in the installer) |
+
+To turn autostart off again:
+
+- **Linux**: `systemctl --global disable roamming.service`
+- **macOS**: remove `/Library/LaunchAgents/com.nathabonfim59.roamming.plist`,
+  or untick roamming under System Settings → General → Login Items
+- **Windows**: untick *Start roamming when I log in* during install, remove
+  the `roamming` value under `HKCU\Software\Microsoft\Windows\CurrentVersion\Run`,
+  or disable it in Task Manager → Startup apps
+
+The Linux package also ships a `.desktop` entry and hicolor icons, so
+roamming shows up in app launchers. The bare archives (`.tar.gz`/`.zip`)
+stay available for portable use; they register nothing.
+
 ## Setup
 
 1. Register an OAuth app in Roam: **Administration → Developer → Add ApiClient**
@@ -73,13 +101,20 @@ go build -o roamming .
 
 ### Release
 
-Pushing a `v*` tag runs GoReleaser on GitHub Actions: each OS builds
-natively in a matrix (linux/amd64, darwin/amd64+arm64,
-windows/amd64), and the archives are merged into a single GitHub
-release with checksums:
+Pushing a `v*` tag runs the release workflow on GitHub Actions: each OS
+builds natively in a matrix (linux/amd64, darwin/amd64+arm64,
+windows/amd64) and produces the archives *plus* installers —
+deb/rpm/Arch packages, macOS `.pkg` installers (native `pkgbuild`), and
+a Windows NSIS setup (`makensis`; GoReleaser's own NSIS support is
+Pro-only). The publish job merges everything into a single GitHub
+release with checksums over all artifacts.
+
+A manual `workflow_dispatch` run of the Release workflow builds all
+installers without publishing — a dry run to exercise the pipeline
+before tagging. Locally, the Linux packages can be exercised with:
 
 ```sh
-git tag v0.1.0 && git push origin v0.1.0
+goreleaser release --snapshot --clean -f .goreleaser/linux.yaml
 ```
 
 The goreleaser configs live in `.goreleaser.yaml` (master view) and

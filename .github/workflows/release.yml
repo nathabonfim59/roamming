@@ -3,6 +3,9 @@ name: Release
 on:
   push:
     tags: ["v*"]
+  # Manual runs build everything but skip publishing: a dry run to
+  # exercise the installers without cutting a release.
+  workflow_dispatch: {}
 
 permissions:
   contents: read
@@ -36,28 +39,70 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y --no-install-recommends \
             build-essential pkg-config libgl1-mesa-dev xorg-dev \
-            libwayland-dev libxkbcommon-dev
+            libwayland-dev libxkbcommon-dev desktop-file-utils
 
-      - name: Build archives (GoReleaser)
+      - name: Validate packaging metadata (Linux)
+        if: runner.os == 'Linux'
+        run: desktop-file-validate packaging/linux/roamming.desktop
+
+      - name: Install NSIS (Windows)
+        if: runner.os == 'Windows'
+        run: choco install nsis -y --no-progress
+
+      - name: Build archives & packages (GoReleaser)
         uses: goreleaser/goreleaser-action@v7
         with:
           version: "~> v2"
-          args: release --clean --skip=publish,announce -f ${{ matrix.config }}
+          # Snapshot mode for manual (non-tag) dry runs; goreleaser's own
+          # NSIS support is Pro-only, so the Windows installer is built
+          # by the step below from the exe this produces.
+          args: >-
+            release --clean --skip=publish,announce
+            ${{ github.ref_type != 'tag' && '--snapshot' || '' }}
+            -f ${{ matrix.config }}
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Upload archives
+      - name: Build Windows installer (NSIS)
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: |
+          $exe = (Get-ChildItem dist -Recurse -Filter roamming.exe |
+            Select-Object -First 1).FullName
+          if (-not $exe) { throw "roamming.exe not found under dist/" }
+          $ver = "${{ github.ref_name }}".TrimStart("v")
+          if ($ver -notmatch '^\d+\.\d+\.\d+$') { $ver = "0.0.0" }
+          $outfile = Join-Path (Resolve-Path dist) `
+            "roamming_${ver}_windows_amd64_setup.exe"
+          & "C:\Program Files (x86)\NSIS\makensis.exe" `
+            /DVERSION=$ver /DEXE="$exe" /DOUTFILE="$outfile" `
+            packaging\windows\roamming.nsi
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+
+      - name: Package macOS installers (.pkg)
+        if: runner.os == 'macOS'
+        run: packaging/macos/package.sh
+        env:
+          VERSION: ${{ github.ref_name }}
+
+      - name: Upload artifacts
         uses: actions/upload-artifact@v7
         with:
           name: dist-${{ matrix.os }}
           path: |
             dist/*.tar.gz
             dist/*.zip
+            dist/*.deb
+            dist/*.rpm
+            dist/*.pkg.tar.zst
+            dist/*.pkg
+            dist/*_setup.exe
           if-no-files-found: error
 
   release:
     name: publish release
     needs: build
+    if: startsWith(github.ref, 'refs/tags/')
     runs-on: ubuntu-latest
     permissions:
       contents: write
@@ -75,7 +120,8 @@ jobs:
         run: |
           shopt -s nullglob
           cd dist
-          sha256sum -- *.tar.gz *.zip > checksums.txt
+          sha256sum -- *.tar.gz *.zip *.deb *.rpm *.pkg.tar.zst *.pkg \
+            *_setup.exe > checksums.txt
           cat checksums.txt
 
       - name: Publish GitHub release

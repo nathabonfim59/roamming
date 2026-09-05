@@ -20,3 +20,32 @@ builds:
 archives:
   - formats: [tar.gz]
     name_template: "{{ .ProjectName }}_{{ .Version }}_{{ .Os }}_{{ .Arch }}"
+
+# Linux packages (deb/RHEL/Arch). GoReleaser adds the built binary at
+# {{ .Bindir }} (/usr/bin) automatically; everything else ships via
+# contents. The systemd user unit + postinstall give per-user autostart
+# at login; the desktop entry and icons put roamming in app launchers.
+nfpms:
+  - id: packages
+    package_name: roamming
+    file_name_template: "{{ .ConventionalFileName }}"
+    maintainer: Nathanael Bonfim <dev@nathabonfim59.com>
+    homepage: https://github.com/nathabonfim59/roamming
+    description: Set your external activity in Roam from the system tray
+    formats:
+      - deb
+      - rpm
+      - archlinux
+    contents:
+      - src: packaging/linux/roamming.service
+        dst: /usr/lib/systemd/user/roamming.service
+      - src: packaging/linux/roamming.desktop
+        dst: /usr/share/applications/roamming.desktop
+      - src: packaging/linux/icons/hicolor
+        dst: /usr/share/icons/hicolor
+        type: tree
+      - src: packaging/linux/icons/pixmaps/roamming.png
+        dst: /usr/share/pixmaps/roamming.png
+    scripts:
+      postinstall: packaging/linux/postinstall.sh
+      preremove: packaging/linux/preremove.sh

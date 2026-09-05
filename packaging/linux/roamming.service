@@ -1,0 +1,15 @@
+[Unit]
+Description=roamming - Roam activity tray app
+Documentation=https://github.com/nathabonfim59/roamming
+# Start with the user session; stop when the graphical session ends.
+After=graphical-session.target
+PartOf=graphical-session.target
+
+[Service]
+Type=simple
+ExecStart=/usr/bin/roamming
+Restart=on-failure
+RestartSec=5
+
+[Install]
+WantedBy=default.target

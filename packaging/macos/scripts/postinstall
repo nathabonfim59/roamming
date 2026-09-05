@@ -1,0 +1,15 @@
+#!/bin/bash
+# pkgbuild postinstall — runs as root after the payload is copied.
+# Registers the LaunchAgent so roamming starts when any user logs in
+# (launchd loads /Library/LaunchAgents per GUI session automatically).
+set -euo pipefail
+
+SCRIPTS_DIR="$(cd "$(dirname "$0")" && pwd)"
+
+install -m 0644 -o root -g wheel \
+  "$SCRIPTS_DIR/com.nathabonfim59.roamming.plist" \
+  /Library/LaunchAgents/com.nathabonfim59.roamming.plist
+
+echo "roamming.app installed to /Applications; it will start automatically at your next login."
+echo "Open /Applications/roamming.app (or Spotlight -> roamming) to start it now."
+exit 0

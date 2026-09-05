@@ -1,0 +1,12 @@
+[Desktop Entry]
+Type=Application
+Name=roamming
+GenericName=Roam activity
+Comment=Set your external activity in Roam from the system tray
+Exec=roamming
+Icon=roamming
+Terminal=false
+Categories=Network;
+Keywords=roam;activity;status;presence;tray;
+StartupNotify=false
+StartupWMClass=roamming
