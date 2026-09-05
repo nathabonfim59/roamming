@@ -1,12 +1,18 @@
 package roam
 
 import (
+	"encoding/json"
 	"errors"
+	"os"
+	"path/filepath"
 	"strings"
 	"testing"
+
+	"github.com/zalando/go-keyring"
 )
 
 func TestCredentialsRoundtrip(t *testing.T) {
+	keyring.MockInit()
 	t.Setenv("XDG_CONFIG_HOME", t.TempDir())
 
 	if _, err := LoadCredentials(); !errors.Is(err, ErrNotAuthenticated) {
@@ -22,11 +28,9 @@ func TestCredentialsRoundtrip(t *testing.T) {
 		RoamName:     "Acme",
 		Scopes:       []string{ScopeWriteActivity, ScopeReadActivity},
 	}
-	path, err := SaveCredentials(in)
-	if err != nil {
+	if err := SaveCredentials(in); err != nil {
 		t.Fatalf("save: %v", err)
 	}
-	t.Log("saved to", path)
 
 	out, err := LoadCredentials()
 	if err != nil {
@@ -47,6 +51,68 @@ func TestCredentialsRoundtrip(t *testing.T) {
 	}
 	if _, err := LoadCredentials(); !errors.Is(err, ErrNotAuthenticated) {
 		t.Fatalf("after clear: err = %v, want ErrNotAuthenticated", err)
+	}
+}
+
+// writeLegacyCredentials plants a credentials.json in the pre-keyring
+// location and returns its path.
+func writeLegacyCredentials(t *testing.T, c *Credentials) string {
+	t.Helper()
+	dir := t.TempDir()
+	t.Setenv("XDG_CONFIG_HOME", dir)
+	path := filepath.Join(dir, "roamming", "credentials.json")
+	if err := os.MkdirAll(filepath.Dir(path), 0o700); err != nil {
+		t.Fatalf("mkdir: %v", err)
+	}
+	data, err := json.Marshal(c)
+	if err != nil {
+		t.Fatalf("marshal: %v", err)
+	}
+	if err := os.WriteFile(path, data, 0o600); err != nil {
+		t.Fatalf("write: %v", err)
+	}
+	return path
+}
+
+func TestLegacyFileMigratesToKeychain(t *testing.T) {
+	keyring.MockInit()
+	path := writeLegacyCredentials(t, &Credentials{ClientID: "cid", AccessToken: "at", RefreshToken: "rt"})
+
+	out, err := LoadCredentials()
+	if err != nil {
+		t.Fatalf("load legacy: %v", err)
+	}
+	if out.AccessToken != "at" || out.RefreshToken != "rt" {
+		t.Fatalf("legacy load mismatch: %+v", out)
+	}
+	if _, err := os.Stat(path); !errors.Is(err, os.ErrNotExist) {
+		t.Fatalf("legacy file still on disk after migration: %v", err)
+	}
+	// The grant now lives in the keychain: it must load with the file gone.
+	out, err = LoadCredentials()
+	if err != nil {
+		t.Fatalf("load from keychain: %v", err)
+	}
+	if out.AccessToken != "at" {
+		t.Fatalf("keychain load mismatch: %+v", out)
+	}
+}
+
+func TestLegacyFileKeptWhenKeychainUnavailable(t *testing.T) {
+	keyring.MockInitWithError(errors.New("no secret service running"))
+	path := writeLegacyCredentials(t, &Credentials{ClientID: "cid", AccessToken: "at"})
+
+	// Without a keychain the grant must still be served, and the
+	// plaintext file kept so the migration can be retried later.
+	out, err := LoadCredentials()
+	if err != nil {
+		t.Fatalf("load legacy without keychain: %v", err)
+	}
+	if out.AccessToken != "at" {
+		t.Fatalf("legacy load mismatch: %+v", out)
+	}
+	if _, err := os.Stat(path); err != nil {
+		t.Fatalf("legacy file should have been kept: %v", err)
 	}
 }
 

@@ -103,8 +103,7 @@ func (a *Auth) SetIdentity(info *TokenInfo) error {
 	a.creds.UserName = info.User.Name
 	a.creds.RoamName = info.Roam.Name
 	a.creds.Scopes = info.Scopes
-	_, err := SaveCredentials(a.creds)
-	return err
+	return SaveCredentials(a.creds)
 }
 
 // Access returns a valid bearer token, refreshing it first when it is
@@ -173,8 +172,7 @@ func (a *Auth) refreshLocked(ctx context.Context) error {
 	if resp.ExpiresIn > 0 {
 		c.ExpiresAt = time.Now().Add(time.Duration(resp.ExpiresIn) * time.Second)
 	}
-	_, err := SaveCredentials(c)
-	return err
+	return SaveCredentials(c)
 }
 
 // GrantLost drops the local grant and notifies the callback.
@@ -343,7 +341,7 @@ func (a *Auth) Connect(ctx context.Context, cfg OAuthConfig, openBrowser func(*u
 
 	a.mu.Lock()
 	a.creds = creds
-	_, saveErr := SaveCredentials(creds)
+	saveErr := SaveCredentials(creds)
 	a.mu.Unlock()
 	if saveErr != nil {
 		return nil, saveErr

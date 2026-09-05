@@ -7,10 +7,22 @@ import (
 	"os"
 	"path/filepath"
 	"time"
+
+	"github.com/zalando/go-keyring"
 )
 
 // ErrNotAuthenticated is returned when no usable grant is stored locally.
 var ErrNotAuthenticated = errors.New("not authenticated with Roam")
+
+// The grant lives in the OS keychain as a single secret (macOS Keychain,
+// Windows Credential Manager, or a freedesktop.org Secret Service such as
+// gnome-keyring/KWallet). The service name matches the macOS bundle ID
+// and LaunchAgent label; the account is fixed because the app holds
+// exactly one grant: the token owner's.
+const (
+	keyringService = "com.nathabonfim59.roamming"
+	keyringAccount = "roamming"
+)
 
 // Credentials is the locally persisted OAuth grant plus the identity it
 // belongs to. Only the token owner's account is ever targeted: this app
@@ -49,66 +61,103 @@ func (c *Credentials) HasScope(s string) bool {
 	return false
 }
 
-func credentialsDir() (string, error) {
+// legacyCredentialsPath is where grants were stored as a plaintext JSON
+// file before the keychain move (roamming <= 1.1.3). It only exists so
+// existing installs can be migrated.
+func legacyCredentialsPath() (string, error) {
 	base, err := os.UserConfigDir()
 	if err != nil {
 		return "", fmt.Errorf("resolve user config dir: %w", err)
 	}
-	return filepath.Join(base, "roamming"), nil
+	return filepath.Join(base, "roamming", "credentials.json"), nil
 }
 
-// SaveCredentials persists the grant with owner-only file permissions.
-func SaveCredentials(c *Credentials) (string, error) {
-	dir, err := credentialsDir()
-	if err != nil {
-		return "", err
-	}
-	if err := os.MkdirAll(dir, 0o700); err != nil {
-		return "", fmt.Errorf("create config dir: %w", err)
-	}
+// SaveCredentials stores the grant in the OS keychain and removes any
+// leftover plaintext file from the pre-keyring format.
+func SaveCredentials(c *Credentials) error {
 	data, err := json.MarshalIndent(c, "", "  ")
 	if err != nil {
-		return "", fmt.Errorf("encode credentials: %w", err)
+		return fmt.Errorf("encode credentials: %w", err)
 	}
-	path := filepath.Join(dir, "credentials.json")
-	if err := os.WriteFile(path, data, 0o600); err != nil {
-		return "", fmt.Errorf("write credentials: %w", err)
+	if err := keyring.Set(keyringService, keyringAccount, string(data)); err != nil {
+		return fmt.Errorf("store credentials in keychain: %w", err)
 	}
-	return path, nil
+	if path, err := legacyCredentialsPath(); err == nil {
+		_ = os.Remove(path)
+	}
+	return nil
 }
 
 // LoadCredentials reads the stored grant. It returns ErrNotAuthenticated
-// when no credentials have been saved yet.
+// when no credentials have been saved yet. A grant found in the legacy
+// plaintext file is migrated into the keychain on the way through; the
+// file is also the fallback when the keychain itself is unavailable.
 func LoadCredentials() (*Credentials, error) {
-	dir, err := credentialsDir()
+	secret, err := keyring.Get(keyringService, keyringAccount)
+	if err == nil {
+		var c Credentials
+		if err := json.Unmarshal([]byte(secret), &c); err != nil {
+			return nil, fmt.Errorf("parse stored credentials: %w", err)
+		}
+		if !c.Connected() {
+			return nil, ErrNotAuthenticated
+		}
+		return &c, nil
+	}
+	// No keychain secret (or no working keychain): fall back to the
+	// pre-keyring plaintext file. When that is missing too, a genuine
+	// keychain error is more informative than "not authenticated".
+	creds, lerr := loadLegacyCredentials()
+	switch {
+	case lerr == nil:
+		return creds, nil
+	case errors.Is(err, keyring.ErrNotFound):
+		return nil, lerr
+	default:
+		return nil, fmt.Errorf("read keychain: %w", err)
+	}
+}
+
+// loadLegacyCredentials reads a pre-keyring credentials.json, migrates it
+// into the keychain, and removes the plaintext file. When the keychain
+// refuses the secret (e.g. no Secret Service on a minimal Linux desktop),
+// the grant is still served and the file kept, so the app keeps working
+// and the next launch can retry the migration.
+func loadLegacyCredentials() (*Credentials, error) {
+	path, err := legacyCredentialsPath()
 	if err != nil {
 		return nil, err
 	}
-	data, err := os.ReadFile(filepath.Join(dir, "credentials.json"))
+	data, err := os.ReadFile(path)
 	if errors.Is(err, os.ErrNotExist) {
 		return nil, ErrNotAuthenticated
 	}
 	if err != nil {
-		return nil, fmt.Errorf("read credentials: %w", err)
+		return nil, fmt.Errorf("read legacy credentials: %w", err)
 	}
 	var c Credentials
 	if err := json.Unmarshal(data, &c); err != nil {
-		return nil, fmt.Errorf("parse credentials: %w", err)
+		return nil, fmt.Errorf("parse legacy credentials: %w", err)
 	}
 	if !c.Connected() {
 		return nil, ErrNotAuthenticated
 	}
+	if err := keyring.Set(keyringService, keyringAccount, string(data)); err != nil {
+		return &c, nil // keep the file; retry the migration next launch
+	}
+	_ = os.Remove(path)
 	return &c, nil
 }
 
 // ClearCredentials removes the stored grant, if any.
 func ClearCredentials() error {
-	dir, err := credentialsDir()
-	if err != nil {
-		return err
+	if err := keyring.Delete(keyringService, keyringAccount); err != nil && !errors.Is(err, keyring.ErrNotFound) {
+		return fmt.Errorf("delete keychain entry: %w", err)
 	}
-	if err := os.Remove(filepath.Join(dir, "credentials.json")); err != nil && !errors.Is(err, os.ErrNotExist) {
-		return fmt.Errorf("remove credentials: %w", err)
+	if path, err := legacyCredentialsPath(); err == nil {
+		if err := os.Remove(path); err != nil && !errors.Is(err, os.ErrNotExist) {
+			return fmt.Errorf("remove legacy credentials: %w", err)
+		}
 	}
 	return nil
 }

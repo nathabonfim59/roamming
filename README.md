@@ -164,9 +164,14 @@ also expires server-side within the TTL.
 
 ## Files & security
 
-- Tokens live in `$XDG_CONFIG_HOME/roamming/credentials.json` (0600; on
-  macOS/Windows under the user config dir). Anyone with read access to your
-  user account can read them; treat this machine as the trust boundary.
+- The OAuth grant (access + refresh tokens) lives in the **OS keychain**
+  as a single secret (`com.nathabonfim59.roamming`): macOS Keychain,
+  Windows Credential Manager, or a freedesktop.org Secret Service
+  (gnome-keyring/KWallet) on Linux. It never touches disk in plaintext;
+  the keychain's own unlock policy is the trust boundary.
+- Upgrades from roamming <= 1.1.3 migrate automatically: the old
+  `credentials.json` is moved into the keychain and deleted on first
+  launch (kept only if no keychain is available).
 - Last-used activity settings live in Fyne preferences.
 
 ## Layout
