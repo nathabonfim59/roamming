@@ -88,3 +88,7 @@ internal/roam/             API client, OAuth+PKCE+callback server, token store
 internal/session/          activity lifecycle: set, heartbeats, timer, clear
 internal/ui/               Fyne window, pickers, palette, tray icons
 ```
+
+The embedded app icon (`internal/ui/appicon.png`) is a copy of
+`docs/design/favicon.png` — after changing the artwork, run
+`make update-logo` and rebuild.

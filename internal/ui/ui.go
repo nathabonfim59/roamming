@@ -152,6 +152,7 @@ type App struct {
 // New builds the whole UI (window + tray). Call Show, then fa.Run.
 func New(fa fyne.App) *App {
 	a := &App{fa: fa, auth: roam.NewAuth()}
+	fa.SetIcon(AppIcon()) // window/taskbar icon
 	a.win = fa.NewWindow("Roam Activity")
 	a.win.Resize(fyne.NewSize(520, 720))
 	a.win.CenterOnScreen()
@@ -224,7 +225,7 @@ func (a *App) buildConnectScreen() {
 	prefs := a.fa.Preferences()
 
 	a.clientIDEntry = widget.NewEntry()
-	a.clientIDEntry.SetPlaceHolder("Client ID from Roam Administration → Developer")
+	a.clientIDEntry.SetPlaceHolder("Client ID from Roam Administration -> Developer")
 	a.clientIDEntry.SetText(prefs.String(prefClientID))
 
 	a.clientSecretEntry = widget.NewPasswordEntry()
@@ -262,17 +263,15 @@ func (a *App) buildConnectScreen() {
 		" — and can only ever act as you, never on behalf of other users.")
 	intro.Wrapping = fyne.TextWrapWord
 
-	note := widget.NewLabel("Register an OAuth app first (Roam Administration → Developer → Add ApiClient) " +
+	note := widget.NewLabel("Register an OAuth app first (Roam Administration -> Developer -> Add ApiClient) " +
 		"and add this exact redirect URI to it:")
 	note.Wrapping = fyne.TextWrapWord
-	note.Importance = widget.LowImportance
 
 	a.connectBox = container.NewVBox(
 		widget.NewCard("Not connected to Roam", "", container.NewVBox(
 			intro,
 			note,
-			a.redirectEntry,
-			form,
+			form, // includes the Redirect URI field the note refers to
 			a.connectBtn,
 			a.waitRow,
 			a.authURLRow,
@@ -288,7 +287,7 @@ func (a *App) onConnect() {
 	clientID := strings.TrimSpace(a.clientIDEntry.Text)
 	redirect := strings.TrimSpace(a.redirectEntry.Text)
 	if clientID == "" {
-		dialog.NewError(errors.New("a Client ID is required (Roam Administration → Developer)"), a.win)
+		dialog.NewError(errors.New("a Client ID is required (Roam Administration -> Developer)"), a.win)
 		return
 	}
 	prefs := a.fa.Preferences()

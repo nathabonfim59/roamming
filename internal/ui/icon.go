@@ -2,17 +2,36 @@ package ui
 
 import (
 	"bytes"
+	_ "embed"
 	"fmt"
 	"image"
 	"image/color"
 	"image/png"
 
 	"fyne.io/fyne/v2"
+	"golang.org/x/image/draw"
 )
 
-// The tray and picker icons are drawn at runtime (no binary assets): a
-// dark rounded tile with a status dot for the system tray, and filled
-// circles for the palette swatches.
+// The tray icon is the app logo (docs/design/favicon.png, embedded here
+// as appicon.png) with a small status badge; the palette swatches are
+// still drawn at runtime.
+
+//go:embed appicon.png
+var appIconPNG []byte
+
+// appLogo is the decoded logo; an empty tile if decoding ever fails.
+var appLogo = func() image.Image {
+	img, err := png.Decode(bytes.NewReader(appIconPNG))
+	if err != nil {
+		return image.NewRGBA(image.Rect(0, 0, iconSize, iconSize))
+	}
+	return img
+}()
+
+// AppIcon is the app logo resource for the window/taskbar icon.
+func AppIcon() fyne.Resource {
+	return fyne.NewStaticResource("appicon.png", appIconPNG)
+}
 
 const iconSize = 64
 
@@ -35,8 +54,9 @@ func (t trayStatus) String() string {
 	}
 }
 
-var trayDotColor = map[trayStatus]color.RGBA{
-	trayIdle:   {0x9C, 0xA3, 0xAF, 0xFF}, // gray
+// trayBadgeColor is the status badge drawn over the logo; idle shows
+// the plain logo without a badge.
+var trayBadgeColor = map[trayStatus]color.RGBA{
 	trayActive: {0x22, 0xC5, 0x5E, 0xFF}, // green
 	trayError:  {0xEF, 0x44, 0x44, 0xFF}, // red
 }
@@ -56,74 +76,66 @@ func trayIcon(status trayStatus) fyne.Resource {
 
 func drawTray(status trayStatus) fyne.Resource {
 	img := image.NewRGBA(image.Rect(0, 0, iconSize, iconSize))
-	bg := color.RGBA{0x1F, 0x29, 0x37, 0xFF} // dark slate tile
-	dot := trayDotColor[status]
+	draw.CatmullRom.Scale(img, img.Bounds(), appLogo, appLogo.Bounds(), draw.Over, nil)
+	if dot, ok := trayBadgeColor[status]; ok {
+		drawBadge(img, dot)
+	}
+	return pngResource("tray-"+status.String()+".png", img)
+}
 
-	cornerR := iconSize / 4
-	dotR := iconSize / 10
-	cx, cy := float64(iconSize)/2, float64(iconSize)/2
+// drawBadge paints a status dot with a dark rim over the lower-right
+// corner of the logo (2x2 supersampled for smooth edges).
+func drawBadge(img *image.RGBA, dot color.RGBA) {
+	s := float64(iconSize)
+	cx, cy := 0.78*s, 0.78*s
+	dotR := 0.14 * s
+	rimW := 0.05 * s
+	rim := color.RGBA{0x11, 0x18, 0x27, 0xFF} // dark slate rim
 
-	for y := range iconSize {
-		for x := range iconSize {
-			// 2x2 supersampling for smoother edges.
+	lo, hi := int(cx-dotR-rimW)-1, int(cx+dotR+rimW)+1
+	for y := max(lo, 0); y <= min(hi, iconSize-1); y++ {
+		for x := max(lo, 0); x <= min(hi, iconSize-1); x++ {
+			// Accumulate premultiplied samples, then source-over.
 			var r, g, b, a float64
 			for sy := range 2 {
 				for sx := range 2 {
 					px := float64(x) + 0.25 + float64(sx)*0.5
 					py := float64(y) + 0.25 + float64(sy)*0.5
-					c := trayPixel(px, py, bg, dot, cx, cy, dotR, cornerR)
-					r += float64(c.R)
-					g += float64(c.G)
-					b += float64(c.B)
-					a += float64(c.A)
+					c, alpha := badgeSample(px, py, cx, cy, dotR, rimW, dot, rim)
+					r += float64(c.R) * alpha
+					g += float64(c.G) * alpha
+					b += float64(c.B) * alpha
+					a += alpha
 				}
 			}
+			r, g, b, a = r/4, g/4, b/4, a/4
+			if a == 0 {
+				continue
+			}
+			dst := img.RGBAAt(x, y)
+			outA := a + (1-a)*float64(dst.A)/255
 			img.SetRGBA(x, y, color.RGBA{
-				R: uint8(r / 4), G: uint8(g / 4), B: uint8(b / 4), A: uint8(a / 4),
+				R: uint8((r+float64(dst.R)*(1-a))/outA + 0.5),
+				G: uint8((g+float64(dst.G)*(1-a))/outA + 0.5),
+				B: uint8((b+float64(dst.B)*(1-a))/outA + 0.5),
+				A: uint8(outA*255 + 0.5),
 			})
 		}
 	}
-	return pngResource("tray-"+status.String()+".png", img)
 }
 
-// trayPixel picks a pixel color: transparent outside the rounded tile,
-// the dot color inside the centered dot, tile color otherwise.
-func trayPixel(px, py float64, bg, dot color.RGBA, cx, cy float64, dotR, cornerR int) color.RGBA {
-	if !inRoundedRect(px, py, cornerR) {
-		return color.RGBA{}
-	}
+// badgeSample classifies one subpixel: the dot color inside the dot,
+// the rim color inside the surrounding ring, transparent elsewhere.
+func badgeSample(px, py, cx, cy, dotR, rimW float64, dot, rim color.RGBA) (color.RGBA, float64) {
 	dx, dy := px-cx, py-cy
-	if dx*dx+dy*dy <= float64(dotR)*float64(dotR) {
-		return dot
-	}
-	return bg
-}
-
-func inRoundedRect(px, py float64, r int) bool {
-	s := float64(iconSize)
-	if px < 0 || py < 0 || px >= s || py >= s {
-		return false
-	}
-	rf := float64(r)
-	// Inside the straight edges there is no corner constraint.
-	if px >= rf && px <= s-rf || py >= rf && py <= s-rf {
-		return true
-	}
-	// Corner zones: distance to the nearest corner center.
-	cxr := clampToCorner(px, rf, s-rf)
-	cyr := clampToCorner(py, rf, s-rf)
-	dx, dy := px-cxr, py-cyr
-	return dx*dx+dy*dy <= rf*rf
-}
-
-func clampToCorner(v, lo, hi float64) float64 {
+	d2 := dx*dx + dy*dy
 	switch {
-	case v < lo:
-		return lo
-	case v > hi:
-		return hi
+	case d2 <= dotR*dotR:
+		return dot, 1
+	case d2 <= (dotR+rimW)*(dotR+rimW):
+		return rim, 1
 	default:
-		return v
+		return color.RGBA{}, 0
 	}
 }
 
