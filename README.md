@@ -19,6 +19,23 @@ grant and requests exactly two scopes:
 It can never target another user: the API's personal access model restricts
 every call to the token owner.
 
+## Gallery
+
+| Connect | Set an activity |
+| --- | --- |
+| ![Connect screen](docs/gallery/connect.png) | ![Activity editor](docs/gallery/activity.png) |
+
+| Dark theme | Tray states (idle, running, error) |
+| --- | --- |
+| ![Dark theme](docs/gallery/activity-dark.png) | ![Tray states](docs/gallery/tray-states.png) |
+
+These are rendered from the real UI by an offscreen test, so they stay in
+sync with the code. Regenerate after UI changes with:
+
+```sh
+ROAMMING_CAPTURE_GALLERY=1 go test ./internal/ui -run TestCaptureGallery
+```
+
 ## Setup
 
 1. Register an OAuth app in Roam: **Administration → Developer → Add ApiClient**
