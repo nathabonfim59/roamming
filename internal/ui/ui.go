@@ -628,15 +628,19 @@ func (a *App) onStartStop() {
 }
 
 func (a *App) onDisconnect() {
-	dialog.NewConfirm("Disconnect",
+	dialog.ShowConfirm("Disconnect",
 		"Revoke the Roam authorization and delete the local tokens?", func(ok bool) {
 			if !ok {
 				return
 			}
-			if a.mgr != nil {
-				a.mgr.Stop()
-			}
+			mgr := a.mgr // captured on the UI thread
 			go func() {
+				// Clear any live activity first: once the grant is gone the
+				// clear call can no longer authenticate. Runs off the UI
+				// thread because Stop blocks on the clear request.
+				if mgr != nil {
+					mgr.Stop()
+				}
 				ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 				defer cancel()
 				err := a.auth.Disconnect(ctx)
